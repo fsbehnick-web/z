@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Табло — Андрей и Аня</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0d131c;
+    --panel: #151d29;
+    --panel-2: #1a2431;
+    --line: #26313f;
+    --andrey: #c7c0b0;
+    --andrey-dim: #948a78;
+    --andrey-soft: rgba(199,192,176,0.10);
+    --anya: #c34f68;
+    --anya-dim: #7f3247;
+    --anya-soft: rgba(195,79,104,0.14);
+    --text: #eceae0;
+    --text-dim: #8a9199;
+    --free: #7fd88f;
+    --shadow: 0 10px 30px -12px rgba(0,0,0,0.55);
+    --ease: cubic-bezier(.22,1,.36,1);
+  }
+  body.theme-beige{
+    --bg: #f3ead9;
+    --panel: #fcf7ec;
+    --panel-2: #efe2ca;
+    --line: #ddccac;
+    --andrey: #6b4a35;
+    --andrey-dim: #8f6c52;
+    --andrey-soft: rgba(107,74,53,0.10);
+    --anya: #7a2740;
+    --anya-dim: #a8607a;
+    --anya-soft: rgba(122,39,64,0.10);
+    --text: #382f24;
+    --text-dim: #85765c;
+    --free: #4f7a4a;
+    --shadow: 0 10px 26px -14px rgba(80,60,20,0.28);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    padding: 28px 16px 60px;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .4s var(--ease), color .3s var(--ease);
+  }
+  .wrap{max-width: 800px; margin: 0 auto;}
+
+  body, .col, .meet-note, .menu-board, .date-pill, .theme-toggle, .menu-tabs, .slot{
+    transition: background-color .35s var(--ease), border-color .35s var(--ease), color .25s var(--ease), box-shadow .35s var(--ease) !important;
+  }
+
+  @keyframes dropIn{
+    from{ opacity:0; transform: translateY(-10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  @keyframes riseIn{
+    from{ opacity:0; transform: translateY(10px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  @keyframes slotIn{
+    from{ opacity:0; transform: translateY(12px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  @keyframes pillPop{
+    0%{ transform: scale(.90); }
+    55%{ transform: scale(1.06); }
+    100%{ transform: scale(1); }
+  }
+  .drop-in{
+    opacity:0;
+    animation: dropIn .45s var(--ease) forwards;
+    will-change: opacity, transform;
+  }
+  .drop-in.d1{ animation-delay: .04s; }
+  .drop-in.d2{ animation-delay: .1s; }
+  .drop-in.d3{ animation-delay: .16s; }
+  .rise-in{
+    opacity:0;
+    animation: riseIn .45s var(--ease) forwards;
+    will-change: opacity, transform;
+  }
+  .rise-in.d1{ animation-delay: .14s; }
+  .rise-in.d2{ animation-delay: .2s; }
+  .rise-in.d3{ animation-delay: .26s; }
+
+  .board-header{
+    text-align:center;
+    padding: 6px 10px 26px;
+    margin-bottom: 20px;
+    position:relative;
+  }
+  .board-header::after{
+    content:"";
+    position:absolute;
+    bottom:0; left:50%;
+    transform: translateX(-50%);
+    width:64px; height:2px;
+    background: linear-gradient(90deg, var(--andrey), var(--anya));
+    border-radius: 2px;
+    opacity:.55;
+  }
+  .board-header .kicker{
+    letter-spacing: 2.5px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight:600;
+    text-transform:uppercase;
+  }
+  .board-header h1{
+    font-weight: 800;
+    font-size: clamp(26px, 6vw, 36px);
+    margin: 8px 0 6px;
+    letter-spacing: 0.5px;
+    background: linear-gradient(100deg, var(--andrey) 20%, var(--text) 55%, var(--anya) 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .board-header p{
+    margin:0;
+    color: var(--text-dim);
+    font-size: 13.5px;
+  }
+  .theme-toggle{
+    margin-top: 16px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight:600;
+    cursor: pointer;
+    transition: border-color .25s var(--ease), color .25s var(--ease), transform .15s var(--ease);
+  }
+  .theme-toggle:hover{ color: var(--text); border-color: var(--andrey-dim); transform: translateY(-1px); }
+  .theme-toggle:active{ transform: translateY(0) scale(.96); }
+
+  .date-rail{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding: 4px 2px 14px;
+    margin-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .date-rail::-webkit-scrollbar{ display:none; }
+  .date-pill{
+    flex: 0 0 auto;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    font-size: 13px;
+    padding: 9px 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align:center;
+    line-height:1.3;
+    transition: border-color .25s var(--ease), color .25s var(--ease), transform .18s var(--ease), box-shadow .25s var(--ease), background-color .25s var(--ease);
+  }
+  .date-pill:hover{ transform: translateY(-2px); border-color: var(--andrey-dim); }
+  .date-pill:active{ transform: translateY(0) scale(.97); }
+  .date-pill b{display:block; font-size:15.5px; color: var(--text); font-weight:700; transition: color .25s var(--ease);}
+  .date-pill.active{
+    border-color: var(--andrey);
+    color: var(--andrey);
+    background: var(--andrey-soft);
+    box-shadow: 0 6px 16px -8px rgba(0,0,0,0.35);
+  }
+  .date-pill.active b{color: var(--andrey);}
+  .date-pill.off b{color: var(--text-dim);}
+  .date-pill.pop{ animation: pillPop .4s cubic-bezier(.34,1.56,.64,1); }
+
+  .day-title{
+    font-size: 14.5px;
+    font-weight:600;
+    color: var(--text-dim);
+    text-align:center;
+    margin: 0 0 18px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .content-swap{
+    transition: opacity .24s var(--ease), transform .24s var(--ease);
+  }
+  .content-swap.swapping{ opacity:0; transform: translateY(6px); }
+
+  .columns{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 560px){
+    .columns{grid-template-columns: 1fr;}
+  }
+
+  .col{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+    box-shadow: var(--shadow);
+  }
+  .col-head{
+    padding: 13px 16px;
+    font-weight:700;
+    font-size:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    position:relative;
+  }
+  .col-head::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0; height:3px;
+  }
+  .col.andrey .col-head{ color: var(--andrey); }
+  .col.andrey .col-head::before{ background: linear-gradient(90deg, var(--andrey-dim), var(--andrey)); }
+  .col.anya .col-head{ color: var(--anya); }
+  .col.anya .col-head::before{ background: linear-gradient(90deg, var(--anya-dim), var(--anya)); }
+  .col-head .free-tag{
+    font-size:11px;
+    color: var(--free);
+    font-weight:600;
+  }
+
+  .slot{
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    display:flex;
+    gap:10px;
+    animation: slotIn .4s var(--ease) both;
+    animation-delay: calc(var(--i, 0) * 0.045s);
+    will-change: opacity, transform;
+  }
+  .slot:hover{ background: var(--panel-2); }
+  .slot:last-child{border-bottom:none;}
+  .slot .time{
+    color: var(--text-dim);
+    flex: 0 0 84px;
+    font-size:12px;
+    font-weight:600;
+    padding-top:1px;
+  }
+  .slot .what b{display:block; color: var(--text); font-size:13px; font-weight:600;}
+  .slot .what span{color: var(--text-dim); font-size:12px;}
+  .empty-day{
+    padding: 26px 14px;
+    text-align:center;
+    color: var(--free);
+    font-size:13px;
+    font-weight:600;
+    animation: slotIn .45s var(--ease) both;
+  }
+
+  .meet-note{
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 26px;
+    box-shadow: var(--shadow);
+    animation: slotIn .45s var(--ease) both;
+    animation-delay: .1s;
+  }
+  .meet-note b{color: var(--text);}
+
+  .menu-board{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 18px 16px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  .menu-board h2{
+    font-size: 13.5px;
+    letter-spacing:1px;
+    color: var(--andrey);
+    margin: 0 0 4px;
+    font-weight:800;
+  }
+  .menu-sub{
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 0 0 14px;
+    line-height: 1.5;
+  }
+  .menu-tabs{
+    position:relative;
+    display:flex;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 14px;
+  }
+  .menu-tab-indicator{
+    position:absolute;
+    top:4px; bottom:4px; left:4px;
+    width: calc((100% - 8px) / 3);
+    background: var(--anya);
+    border-radius: 8px;
+    transition: transform .35s var(--ease);
+    z-index:0;
+  }
+  .menu-tab{
+    position:relative;
+    z-index:1;
+    flex:1;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 8px 6px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight:600;
+    font-family:inherit;
+    cursor:pointer;
+    transition: color .35s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+  .menu-tab.active{ color: var(--bg); }
+  .menu-list{
+    max-height: 340px;
+    overflow-y: auto;
+    border-top: 1px solid var(--line);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .menu-list::-webkit-scrollbar{width:6px;}
+  .menu-list::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px;}
+  .menu-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    transition: background-color .2s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .menu-row:hover{ background: var(--panel-2); }
+  .menu-row .num{
+    flex: 0 0 52px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight:600;
+  }
+  .menu-row .dep{
+    flex: 0 0 52px;
+    font-weight:700;
+    color: var(--andrey);
+  }
+  .menu-row .arrow{ color: var(--text-dim); flex: 0 0 14px; text-align:center;}
+  .menu-row .arr{
+    flex: 0 0 52px;
+    font-weight:700;
+    color: var(--anya);
+  }
+  .menu-row .dest{
+    flex: 1;
+    color: var(--text-dim);
+    font-size: 12px;
+    text-align:right;
+  }
+  .menu-row .alab{
+    flex: 0 0 20px;
+    font-size: 13px;
+    text-align:center;
+  }
+  .menu-row .alab.yes{ color: var(--free); }
+  .menu-row .alab.no{ color: var(--text-dim); }
+  .lock-screen{
+    position:fixed;
+    inset:0;
+    background: var(--bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index: 999;
+    padding: 20px;
+    transition: opacity .3s var(--ease);
+  }
+  .lock-screen.hidden{
+    opacity:0;
+    pointer-events:none;
+  }
+  .lock-box{
+    width:100%;
+    max-width: 300px;
+    text-align:center;
+  }
+  .lock-kicker{
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight:600;
+    text-transform:uppercase;
+    margin-bottom: 10px;
+  }
+  .lock-title{
+    color: var(--text);
+    font-size: 19px;
+    font-weight:700;
+    margin-bottom: 18px;
+  }
+  .lock-input{
+    width:100%;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 18px;
+    text-align:center;
+    letter-spacing: 4px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    outline:none;
+    transition: border-color .2s var(--ease);
+  }
+  .lock-input:focus{ border-color: var(--andrey); }
+  .lock-btn{
+    width:100%;
+    background: var(--anya);
+    border:none;
+    color:#fff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight:700;
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor:pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity .2s var(--ease), transform .15s var(--ease);
+  }
+  .lock-btn:hover{ opacity:.9; }
+  .lock-btn:active{ transform: scale(.97); }
+  .lock-error{
+    color: var(--anya);
+    font-size: 12.5px;
+    margin-top: 12px;
+    opacity:0;
+    transition: opacity .2s var(--ease);
+  }
+  .lock-error.show{ opacity:1; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-kicker">Расписание — Андрей &amp; Аня</div>
+    <div class="lock-title">Введите пароль</div>
+    <input type="password" id="lockInput" class="lock-input" inputmode="numeric" autocomplete="off" autofocus>
+    <button class="lock-btn" onclick="checkPassword()">Войти</button>
+    <div class="lock-error" id="lockError">Неверный пароль, попробуйте ещё раз</div>
+  </div>
+</div>
+
+<div class="wrap" id="pageWrap" style="display:none;">
+
+  <div class="board-header">
+    <div class="kicker drop-in d1">Расписание</div>
+    <h1 class="drop-in d2">Андрей &amp; Аня</h1>
+    <p class="drop-in d3">1–13 сентября 2026 — период адаптационного модуля</p>
+    <button id="themeToggle" class="theme-toggle drop-in d3" onclick="toggleTheme()">Бежевая тема</button>
+  </div>
+
+  <div class="rise-in d1">
+    <div class="date-rail" id="dateRail"></div>
+    <div class="day-title" id="dayTitle"></div>
+  </div>
+
+  <div class="content-swap rise-in d2" id="daySwap">
+    <div class="columns">
+      <div class="col andrey">
+        <div class="col-head"><span>Андрей — МПГУ</span><span class="free-tag" id="andreyFree"></span></div>
+        <div id="andreySlots"></div>
+      </div>
+      <div class="col anya">
+        <div class="col-head"><span>Аня — МИЭТ (УТС-11)</span><span class="free-tag" id="anyaFree"></span></div>
+        <div id="anyaSlots"></div>
+      </div>
+    </div>
+
+    <div class="meet-note" id="meetNote"></div>
+  </div>
+
+  <div class="menu-board rise-in d3">
+    <h2>МЕНЮ ЭЛЕКТРИЧЕК — НА КАКОЙ УЕХАТЬ</h2>
+    <p class="menu-sub">п — пригородная, к — «Ласточка Комфорт», э — «Ласточка Экспресс»</p>
+    <div class="menu-tabs">
+      <div class="menu-tab-indicator" id="menuIndicator"></div>
+      <button class="menu-tab active" onclick="setMenu(0)">Подсолнечная → Москва</button>
+      <button class="menu-tab" onclick="setMenu(1)">Москва → Подсолнечная</button>
+      <button class="menu-tab" onclick="setMenu(2)">Москва → Зеленоград</button>
+    </div>
+    <div class="menu-list" id="menuList"></div>
+  </div>
+
+</div>
+
+<script>
+const anya = {
+  1: [
+    {t:"09:00–10:20", w:"Линейная алгебра и аналит. геометрия", d:"практика · Болашенко П.А. · ауд. 3301"},
+    {t:"10:30–11:50", w:"Физика: механика, термодинамика, электричество", d:"практика · Кулешов А.Е. · ауд. 3229"},
+    {t:"12:00–13:20", w:"Основы математического анализа", d:"лекция · Погибельский А.П. · ауд. 1203М"},
+    {t:"14:00–15:20", w:"Информатика / Введение в информатику", d:"лекция · Слюсарь М.В. · ауд. 1205М"},
+    {t:"15:30–16:50", w:"Голос поколения. Молодёжь России", d:"лекция · Пахомова Ю.Д. · ДК МИЭТ"},
+  ],
+  2: [
+    {t:"10:30–11:50", w:"Просветительское мероприятие", d:"ауд. 3128"},
+    {t:"12:00–13:20", w:"Практикум по основам высшей математики", d:"лаб. · Коночкин К.Н. · ауд. 3118"},
+  ],
+  3: [
+    {t:"12:00–13:20", w:"Просветительское мероприятие", d:"ауд. 3244"},
+    {t:"14:00–15:20", w:"Физика: механика, термодинамика, электричество", d:"лаб. · Зыков А.В. · ауд. 3335а/3333 ОФ"},
+  ],
+  4: [],
+  5: [
+    {t:"09:00–10:20", w:"Физика: механика, термодинамика, электричество", d:"лекция · Трифонов А.Ю. · ауд. 1202М"},
+    {t:"10:30–11:50", w:"Просветительское мероприятие", d:"Музей"},
+    {t:"12:00–13:20", w:"Просветительское мероприятие", d:"ДК"},
+    {t:"14:00–15:20", w:"Линейная алгебра и аналит. геометрия", d:"лекция · Прокофьев А.А. · ауд. 1202М"},
+  ],
+  6: [
+    {t:"09:00–18:20", w:"Военная подготовка", d:"6 пар подряд · УВЦ 1"},
+  ],
+  0: [],
+};
+
+const andrey = {
+  "2026-09-01": [
+    {t:"09:00–10:30", w:"Первый раз на первый курс", d:"ассист. Тихонов С.О. · ауд. 301"},
+    {t:"10:40–12:10", w:"Знакомство со структурой МПГУ и ИМИ", d:"дирекция ИМИ и кафедры · ауд. 402"},
+    {t:"12:40–14:10", w:"Знакомство с ЭБС МПГУ", d:"Курицина Т.В. · ауд. 301"},
+    {t:"14:20–15:50", w:"Основы российской государственности", d:"практика · Куанова И.Б. · ауд. 207"},
+  ],
+  "2026-09-02": [
+    {t:"09:00–10:30", w:"Знакомство со студ. самоуправлением и профсоюзом", d:"Горпенко К.Д., Корноухова Д.Д. · ауд. 402"},
+    {t:"10:40–12:10", w:"МПГУ – не только учёба", d:"Гульянц С.С. · ауд. 402"},
+    {t:"12:40–14:10", w:"Геометрия", d:"лекция · Никифорова А.В. · ауд. 401"},
+    {t:"14:20–15:50", w:"Математический анализ", d:"лекция · Матвеев Е.М. · ауд. 401"},
+  ],
+  "2026-09-03": [
+    {t:"09:00–10:30", w:"Знакомство с цифровой образоват. средой МПГУ", d:"лекция · Маняхина В.Г. · ауд. 301"},
+    {t:"10:40–12:10", w:"История России", d:"лекция · Филина Е.И. · ауд. 402"},
+    {t:"12:40–14:10", w:"Алгебра", d:"лекция · Михайлова М.В. · ауд. 401"},
+    {t:"14:20–15:50", w:"Цифровая образоват. среда МПГУ (практикум)", d:"по подгруппам · ауд. 209/208/210"},
+  ],
+  "2026-09-04": [
+    {t:"10:40–12:10", w:"Учимся учиться", d:"Чуйкова Н.В. · ауд. 401"},
+    {t:"12:40–14:10", w:"Основы российской государственности", d:"лекция · Максимова Л.Н. · ауд. 402"},
+    {t:"14:20–15:50", w:"Основы российской государственности", d:"лекция · Максимова Л.Н. · ауд. 402"},
+    {t:"16:00–17:30", w:"Цифровая образоват. среда МПГУ (практикум)", d:"по подгруппам · ауд. 210/108/211"},
+  ],
+  "2026-09-05": [
+    {t:"09:00–15:50", w:"Встречи с кураторами-студентами", d:"весь день, день кураторов"},
+  ],
+  "2026-09-07": [
+    {t:"09:00–10:30", w:"Алгебра", d:"практика · Артемов Д.Ю. · ауд. 407"},
+    {t:"10:40–12:10", w:"Геометрия", d:"лекция · Никифорова А.В. · ауд. 301"},
+    {t:"12:40–14:10", w:"Алгебра", d:"практика · Артемов Д.Ю. · ауд. 407"},
+    {t:"14:20–15:50", w:"Тренинг по военно-спортивной подготовке", d:"пр-кт Вернадского, 88, спортзал"},
+  ],
+  "2026-09-08": [
+    {t:"09:00–10:30", w:"Иностранный язык", d:"практика · Кашпарова В.С. · ауд. 405"},
+    {t:"10:40–12:10", w:"Геометрия", d:"лекция · Никифорова А.В. · ауд. 301"},
+    {t:"12:40–14:10", w:"Иностранный язык", d:"практика · Кашпарова В.С. · ауд. 405"},
+    {t:"14:20–15:50", w:"Основы российской государственности", d:"практика · Куанова И.Б. · ауд. 305"},
+  ],
+  "2026-09-09": [
+    {t:"09:00–10:30", w:"Геометрия", d:"практика · Никифорова А.В. · ауд. 206"},
+    {t:"10:40–12:10", w:"История России", d:"лекция · Филина Е.И. · ауд. 402"},
+    {t:"12:40–14:10", w:"Геометрия", d:"практика · Никифорова А.В. · ауд. 207"},
+    {t:"14:20–15:50", w:"Тренинг по военно-спортивной подготовке", d:"пр-кт Вернадского, 88, спортзал"},
+  ],
+  "2026-09-10": [
+    {t:"09:00–10:30", w:"Математический анализ", d:"лекция · Матвеев Е.М. · ауд. 401"},
+    {t:"10:40–12:10", w:"Знакомство с деканатом и его функциями", d:"Машкина А.В. · ауд. 301"},
+    {t:"12:40–14:10", w:"Алгебра", d:"лекция · Михайлова М.В. · ауд. 401"},
+  ],
+  "2026-09-11": [
+    {t:"10:40–12:10", w:"Математический анализ", d:"практика · Морозенкова М.С. · ауд. 207"},
+    {t:"12:40–14:10", w:"Основы российской государственности", d:"практика · Куанова И.Б. · ауд. 407"},
+    {t:"14:20–15:50", w:"Речевые практики", d:"практика · Редькина Д.И. · ауд. 405"},
+  ],
+  "2026-09-12": [
+    {t:"весь день", w:"Самостоятельные и групповые прогулки", d:"день здоровья — пар нет"},
+  ],
+  "2026-09-13": [],
+};
+
+const dateList = [
+  ["2026-09-01","1 сент","Вт"],
+  ["2026-09-02","2 сент","Ср"],
+  ["2026-09-03","3 сент","Чт"],
+  ["2026-09-04","4 сент","Пт"],
+  ["2026-09-05","5 сент","Сб"],
+  ["2026-09-06","6 сент","Вс"],
+  ["2026-09-07","7 сент","Пн"],
+  ["2026-09-08","8 сент","Вт"],
+  ["2026-09-09","9 сент","Ср"],
+  ["2026-09-10","10 сент","Чт"],
+  ["2026-09-11","11 сент","Пт"],
+  ["2026-09-12","12 сент","Сб"],
+  ["2026-09-13","13 сент","Вс"],
+];
+
+const weekdayNames = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
+
+let currentDate = "2026-09-01";
+
+function weekdayIndex(dateStr){
+  const d = new Date(dateStr + "T00:00:00");
+  return d.getDay();
+}
+
+function lastEnd(items){
+  if(!items || items.length===0) return null;
+  const last = items[items.length-1];
+  const parts = last.t.split("–");
+  return parts.length===2 ? parts[1].trim() : null;
+}
+
+function freeTagText(items, allDayFreeText, busyAllDayText){
+  if(items.length===0) return allDayFreeText;
+  const end = lastEnd(items);
+  return end ? `до ${end}` : busyAllDayText;
+}
+
+function buildRail(){
+  const rail = document.getElementById('dateRail');
+  rail.innerHTML = "";
+  dateList.forEach(([iso,label,wd])=>{
+    const pill = document.createElement('div');
+    pill.className = 'date-pill' + (iso===currentDate ? ' active':'') + ((wd==="Сб"||wd==="Вс")?' off':'');
+    pill.dataset.iso = iso;
+    pill.innerHTML = `<b>${label}</b>${wd}`;
+    pill.onclick = ()=>{ if(iso!==currentDate){ currentDate = iso; goToDate(); } };
+    rail.appendChild(pill);
+  });
+}
+
+function replayAnim(el){
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = '';
+}
+
+function updateActivePill(){
+  document.querySelectorAll('.date-pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.iso === currentDate);
+  });
+  const activePill = document.querySelector('.date-pill.active');
+  if(activePill){
+    replayAnim(activePill);
+    activePill.classList.remove('pop');
+    void activePill.offsetWidth;
+    activePill.classList.add('pop');
+    activePill.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  }
+}
+
+function goToDate(){
+  updateActivePill();
+  const swap = document.getElementById('daySwap');
+  swap.classList.add('swapping');
+  window.setTimeout(()=>{
+    render();
+    requestAnimationFrame(()=>{ swap.classList.remove('swapping'); });
+  }, 220);
+}
+
+function render(){
+  const wIdx = weekdayIndex(currentDate);
+  document.getElementById('dayTitle').textContent =
+    dateList.find(d=>d[0]===currentDate)[1] + " · " + weekdayNames[wIdx];
+
+  const aItems = andrey[currentDate] || [];
+  const andreySlotsEl = document.getElementById('andreySlots');
+  if(aItems.length===0){
+    andreySlotsEl.innerHTML = `<div class="empty-day">Пар нет — весь день свободен</div>`;
+  } else {
+    andreySlotsEl.innerHTML = aItems.map((it,i)=>`
+      <div class="slot" style="--i:${i}">
+        <div class="time">${it.t}</div>
+        <div class="what"><b>${it.w}</b><span>${it.d}</span></div>
+      </div>`).join("");
+  }
+  document.getElementById('andreyFree').textContent = freeTagText(aItems, "весь день", "занят весь день");
+
+  const anItems = anya[wIdx] || [];
+  const anyaSlotsEl = document.getElementById('anyaSlots');
+  if(anItems.length===0){
+    anyaSlotsEl.innerHTML = `<div class="empty-day">Пар нет — весь день свободна</div>`;
+  } else {
+    anyaSlotsEl.innerHTML = anItems.map((it,i)=>`
+      <div class="slot" style="--i:${i}">
+        <div class="time">${it.t}</div>
+        <div class="what"><b>${it.w}</b><span>${it.d}</span></div>
+      </div>`).join("");
+  }
+  document.getElementById('anyaFree').textContent = freeTagText(anItems, "весь день", "занята весь день");
+
+  const note = document.getElementById('meetNote');
+  const bothFree = aItems.length===0 && anItems.length===0;
+  if(bothFree){
+    note.innerHTML = `<b>Оба свободны весь день</b> — хороший день, чтобы встретиться, например в Зеленограде-Крюкове. Электричка Подсолнечная → Крюково идёт по тому же Ленинградскому направлению.`;
+  } else {
+    const aPhrase = aItems.length===0 ? "свободен весь день"
+      : (lastEnd(aItems) ? `освобождается к <b>${lastEnd(aItems)}</b>` : "занят весь день");
+    const anPhrase = anItems.length===0 ? "свободна весь день"
+      : (lastEnd(anItems) ? `освобождается к <b>${lastEnd(anItems)}</b>` : "занята весь день");
+    note.innerHTML = `Андрей ${aPhrase}, Аня ${anPhrase}.`;
+  }
+  replayAnim(note);
+}
+
+const menuPodsolnechnayaMoskva = [
+["6501","к","03:55","05:09","Москва"],
+["6505","к","04:59","06:34","Москва"],
+["6507","к","05:30","07:00","Москва"],
+["6701","п","05:40","07:10","Москва"],
+["6509","к","05:50","07:20","Москва"],
+["6601","к","06:00","07:30","Москва"],
+["6511","к","06:09","07:40","Москва"],
+["6703","п","06:16","07:48","Москва"],
+["7901","э","06:40","07:30","Москва"],
+["7921","э","06:46","07:36","Москва"],
+["6401","к","06:49","08:24","Москва"],
+["7951","э","07:08","08:10","Москва"],
+["6705","п","07:17","08:54","Москва"],
+["6513","к","07:28","09:00","Москва"],
+["6603","к","07:34","09:24","Москва"],
+["7905","э","07:43","08:40","Москва"],
+["7923","э","07:49","08:45","Москва"],
+["6515","к","07:56","09:42","Москва"],
+["6517","к","08:20","09:54","Москва"],
+["6403","к","08:55","10:30","Москва"],
+["7961","э","09:05","10:00","Москва"],
+["7903","э","09:10","10:05","Москва"],
+["7925","э","09:17","10:10","Москва"],
+["6519","к","09:31","11:00","Москва"],
+["6605","к","09:42","11:12","Москва"],
+["6707","п","09:52","11:22","Москва"],
+["7917","э","10:35","11:22","Москва"],
+["6405","к","10:39","12:10","Москва"],
+["7927","э","11:11","11:58","Москва"],
+["6521","к","11:29","12:55","Москва"],
+["6607","к","11:39","13:10","Москва"],
+["6709","п","11:50","13:20","Москва"],
+["7949","э","12:05","12:45","Москва"],
+["7101","э","12:16","13:24","Москва"],
+["7931","э","12:58","13:49","Москва"],
+["6525","к","13:17","14:54","Москва"],
+["6609","к","13:40","15:10","Москва"],
+["7933","э","13:55","14:39","Москва"],
+["6407","к","14:28","16:00","Москва"],
+["6527","к","14:49","16:16","Москва"],
+["7935","э","15:08","15:52","Москва"],
+["7103","э","15:28","16:19","Москва"],
+["6611","к","15:37","17:02","Москва"],
+["6103","к","15:45","17:14","Москва"],
+["6409","к","15:52","17:24","Москва"],
+["7937","э","16:10","16:49","Москва"],
+["6529","к","16:58","18:44","Москва"],
+["7939","э","17:03","17:52","Москва"],
+["6713","п","17:21","18:53","Москва"],
+["6411","к","17:24","19:00","Москва"],
+["7123","э","17:47","18:36","Москва"],
+["6715","п","18:02","19:34","Москва"],
+["7957","э","18:17","19:24","Москва"],
+["7105","э","18:54","19:47","Москва"],
+["6531","к","19:02","20:25","Москва"],
+["6413","к","19:13","20:40","Москва"],
+["6533","к","19:19","20:46","Москва"],
+["7941","э","19:28","20:19","Москва"],
+["6613","к","19:38","21:05","Москва"],
+["6717","п","19:44","21:25","Москва"],
+["7943","э","19:52","20:42","Москва"],
+["6415","к","20:45","22:15","Москва"],
+["7945","э","21:20","22:30","Москва"],
+["6535","к","21:25","23:05","Москва"],
+["6615","к","21:52","23:15","Москва"],
+["7947","э","22:03","22:44","Москва"],
+["6417","к","22:50","00:15","Москва"],
+["6617","к","23:26","00:46","Москва"],
+["6723","п","23:36","01:15","Москва"],
+];
+
+const menuMoscowPodsolnechnaya = [
+["6502","к","04:17","05:14","Клин",true],
+["7922","э","04:27","05:28","Тверь",false],
+["6702","к","04:45","05:43","Тверь",false],
+["6602","к","05:14","06:48","Конаково ГРЭС",true],
+["6504","к","05:21","06:56","Клин",true],
+["7902","э","06:17","07:07","Клин",true],
+["6506","к","06:47","08:11","Клин",true],
+["6402","к","06:57","08:25","Подсолнечная",true],
+["7924","э","07:02","07:54","Тверь",true],
+["6704","п","07:27","08:53","Решетниково",true],
+["6604","к","07:33","09:01","Конаково ГРЭС",true],
+["6508","к","07:47","09:10","Клин",true],
+["7926","э","07:52","08:37","Тверь",false],
+["7904","э","08:22","09:16","Клин",true],
+["6706","п","08:27","09:49","Тверь",false],
+["6404","к","08:37","09:57","Подсолнечная",true],
+["7928","э","08:42","09:31","Тверь",true],
+["6606","к","09:17","10:44","Конаково ГРЭС",true],
+["7930","э","09:42","10:32","Тверь",false],
+["6510","к","09:47","11:11","Клин",true],
+["7906","э","10:42","11:32","Клин",true],
+["6608","к","11:27","12:51","Конаково ГРЭС",true],
+["6512","к","11:37","12:59","Клин",false],
+["7932","э","11:42","12:26","Тверь",false],
+["6406","к","11:47","13:15","Подсолнечная",true],
+["7934","э","12:32","13:19","Тверь",false],
+["7102","э","12:57","13:45","Клин",false],
+["6710","п","13:37","14:55","Тверь",false],
+["6610","к","13:47","15:11","Конаково ГРЭС",true],
+["6514","к","13:55","15:19","Клин",true],
+["7936","э","14:00","14:48","Тверь",true],
+["6408","к","14:07","15:31","Подсолнечная",false],
+["7958","э","14:52","15:37","Тверь",false],
+["7122","э","14:52","15:37","Конаково ГРЭС",false],
+["7122","э","14:57","15:41","Клин",false],
+["7958","э","14:57","15:41","Решетниково",false],
+["6712","п","15:25","16:43","Тверь",false],
+["6410","к","15:47","17:11","Подсолнечная",false],
+["7938","э","15:53","16:35","Тверь",false],
+["6516","к","15:57","17:00","Клин",true],
+["6526","к","16:02","17:40","Клин",true],
+["7908","э","16:32","17:20","Клин",true],
+["7940","э","16:42","17:29","Тверь",true],
+["6612","к","17:17","18:47","Конаково ГРЭС",false],
+["6714","п","17:27","18:54","Тверь",true],
+["6412","к","17:37","19:01","Подсолнечная",true],
+["7954","э","17:52","18:35","Тверь",false],
+["7942","э","17:57","18:40","Тверь",false],
+["7910","э","18:12","19:06","Клин",true],
+["7914","э","18:22","19:17","Конаково ГРЭС",false],
+["6518","к","18:27","19:51","Клин",true],
+["7944","э","18:32","19:24","Тверь",true],
+["6414","к","18:37","20:28","Подсолнечная",true],
+["7960","э","18:52","19:39","Бологое",false],
+["6614","к","19:25","20:49","Конаково ГРЭС",true],
+["6716","п","19:37","20:59","Тверь",true],
+["7946","э","19:42","20:36","Тверь",false],
+["6416","к","19:47","21:16","Подсолнечная",true],
+["6520","к","20:02","22:03","Клин",true],
+["7952","э","20:02","21:00","Клин",true],
+["6718","п","20:47","22:11","Тверь",true],
+["6522","к","20:57","22:20","Клин",true],
+["7948","э","21:02","21:49","Тверь",false],
+["6616","к","21:07","22:30","Конаково ГРЭС",true],
+["6720","п","21:37","23:01","Тверь",true],
+["6618","к","21:57","23:21","Конаково ГРЭС",true],
+["6418","к","22:07","23:35","Подсолнечная",true],
+["6524","к","22:27","23:54","Клин",true],
+["6620","к","23:47","01:10","Решетниково",true],
+];
+
+const menuMoscowKryukovo = [
+["6802","к","00:17","01:15","Зеленоград",false],
+["6392","к","00:27","01:25","Зеленоград",false],
+["6394","к","00:47","01:45","Зеленоград",false],
+["6348","к","01:07","02:05","Зеленоград",false],
+["6502","к","04:17","04:49","Клин",true],
+["7922","э","04:27","05:00","Тверь",false],
+["6702","к","04:45","05:20","Тверь",false],
+["6602","к","05:14","06:11","Конаково ГРЭС",true],
+["6504","к","05:21","06:30","Клин",true],
+["6302","к","05:49","06:45","Зеленоград",false],
+["7902","э","06:17","06:48","Клин",true],
+["7532","э","06:22","06:56","Зеленоград",false],
+["6304","к","06:27","07:29","Зеленоград",false],
+["6506","к","06:47","07:45","Клин",true],
+["6402","к","06:57","07:55","Подсолнечная",true],
+["7924","э","07:02","07:35","Тверь",true],
+["6306","к","07:07","08:05","Зеленоград",false],
+["6308","к","07:17","08:15","Зеленоград",false],
+["7536","э","07:22","07:56","Зеленоград",false],
+["6704","п","07:27","08:25","Решетниково",true],
+["6604","к","07:33","08:35","Конаково ГРЭС",true],
+["7538","э","07:42","08:10","Зеленоград",false],
+["6508","к","07:47","08:45","Клин",true],
+["7926","э","07:52","08:20","Тверь",false],
+["6346","к","07:57","08:55","Зеленоград",false],
+["7520","э","08:02","08:34","Зеленоград",false],
+["6310","п","08:07","09:05","Зеленоград",false],
+["6312","к","08:17","09:15","Зеленоград",false],
+["7904","э","08:22","08:56","Клин",true],
+["6706","п","08:27","09:25","Тверь",false],
+["6404","к","08:37","09:35","Подсолнечная",true],
+["6314","к","08:37","09:35","Зеленоград",false],
+["7928","э","08:42","09:13","Тверь",true],
+["6396","к","08:47","09:45","Зеленоград",false],
+["7542","э","08:52","09:24","Зеленоград",false],
+["7544","э","09:02","09:38","Зеленоград",false],
+["6316","п","09:07","10:05","Зеленоград",false],
+["6606","к","09:17","10:15","Конаково ГРЭС",true],
+["6318","к","09:17","10:15","Зеленоград",false],
+["7930","э","09:42","10:13","Тверь",false],
+["6510","к","09:47","10:45","Зеленоград",true],
+["6510","к","09:47","10:45","Клин",true],
+["7912","э","09:52","10:21","Зеленоград",false],
+["6320","к","09:57","10:55","Зеленоград",false],
+["7526","э","10:12","10:46","Зеленоград",false],
+["6322","к","10:17","11:15","Зеленоград",false],
+["7546","э","10:22","10:53","Зеленоград",false],
+["6324","к","10:35","11:35","Зеленоград",false],
+["7906","э","10:42","11:13","Клин",true],
+["6326","к","10:47","11:45","Зеленоград",false],
+["7548","э","10:52","11:23","Зеленоград",false],
+["6328","к","10:58","11:55","Зеленоград",false],
+["6708","к","11:15","12:15","Зеленоград",false],
+["6608","к","11:27","12:25","Зеленоград",true],
+["6608","к","11:27","12:25","Конаково ГРЭС",true],
+["6512","к","11:37","12:35","Зеленоград",false],
+["6512","к","11:37","12:35","Клин",false],
+["7932","э","11:42","12:11","Тверь",false],
+["6406","к","11:47","12:45","Зеленоград",true],
+["6406","к","11:47","12:45","Подсолнечная",true],
+["6330","п","11:57","12:55","Зеленоград",false],
+["6332","к","12:03","13:05","Зеленоград",false],
+["6334","к","12:27","13:25","Зеленоград",false],
+["7934","э","12:32","13:00","Тверь",false],
+["6114","к","12:37","13:35","Зеленоград",false],
+["6202","к","12:47","13:45","Зеленоград",false],
+["7102","э","12:57","13:29","Клин",false],
+["6336","к","13:07","14:05","Зеленоград",false],
+["6338","к","13:27","14:25","Зеленоград",false],
+["6710","п","13:37","14:35","Тверь",false],
+["6610","к","13:47","14:45","Конаково ГРЭС",true],
+["6514","к","13:55","14:55","Клин",true],
+["7936","э","14:00","14:30","Тверь",true],
+["6408","к","14:07","15:05","Подсолнечная",false],
+["6112","к","14:13","15:15","Зеленоград",false],
+["6340","к","14:35","15:35","Зеленоград",false],
+["7556","э","14:47","15:17","Зеленоград",false],
+["7958","э","14:52","15:22","Тверь",false],
+["7122","э","14:52","15:22","Конаково ГРЭС",false],
+["6342","к","14:57","15:55","Зеленоград",false],
+["7122","э","14:57","15:28","Клин",false],
+["6398","к","15:07","16:05","Зеленоград",false],
+["6712","п","15:25","16:25","Тверь",false],
+["6410","к","15:47","16:45","Подсолнечная",false],
+["6344","к","15:52","16:55","Зеленоград",false],
+["7938","э","15:53","16:22","Тверь",false],
+["6516","к","15:57","16:35","Клин",true],
+["6526","к","16:02","17:14","Клин",true],
+["7558","э","16:12","16:51","Зеленоград",false],
+["6350","к","16:17","17:15","Зеленоград",false],
+["6354","к","16:27","17:25","Зеленоград",false],
+["7908","э","16:32","17:01","Клин",true],
+["6360","к","16:37","17:35","Зеленоград",false],
+["7940","э","16:42","17:11","Тверь",true],
+["6356","к","16:55","17:55","Зеленоград",false],
+["7560","э","17:02","17:36","Зеленоград",false],
+["6358","к","17:07","18:05","Зеленоград",false],
+["7562","э","17:12","17:43","Зеленоград",false],
+["6612","к","17:17","18:13","Конаково ГРЭС",false],
+["6714","п","17:27","18:29","Тверь",true],
+["6412","к","17:37","18:35","Подсолнечная",true],
+["7954","э","17:52","18:21","Тверь",false],
+["6362","к","17:57","18:54","Зеленоград",false],
+["7942","э","17:57","18:26","Тверь",false],
+["6364","к","18:07","19:05","Зеленоград",false],
+["7910","э","18:12","18:41","Клин",true],
+["6366","к","18:17","19:15","Зеленоград",false],
+["7914","э","18:22","18:59","Конаково ГРЭС",false],
+["6518","к","18:27","19:25","Клин",true],
+["7944","э","18:32","19:05","Тверь",true],
+["6414","к","18:37","19:35","Подсолнечная",true],
+["6368","к","18:46","19:45","Зеленоград",false],
+["7960","э","18:52","19:21","Бологое",false],
+["6372","к","18:57","19:55","Зеленоград",false],
+["6370","п","18:57","19:55","Зеленоград",false],
+["7568","э","19:06","19:38","Зеленоград",false],
+["6374","к","19:17","20:17","Зеленоград",false],
+["6614","к","19:25","20:27","Конаково ГРЭС",true],
+["6716","п","19:37","20:35","Тверь",true],
+["7946","э","19:42","20:20","Тверь",false],
+["6416","к","19:47","20:45","Подсолнечная",true],
+["7566","э","19:52","20:30","Зеленоград",false],
+["6376","к","19:57","20:55","Зеленоград",false],
+["6520","к","20:02","20:54","Клин",true],
+["7952","э","20:02","20:36","Клин",true],
+["6380","к","20:15","21:15","Зеленоград",false],
+["7572","э","20:32","21:07","Зеленоград",false],
+["6384","к","20:37","21:35","Зеленоград",false],
+["6718","п","20:47","21:45","Тверь",true],
+["6522","к","20:57","21:54","Клин",true],
+["7948","э","21:02","21:33","Тверь",false],
+["6616","к","21:07","22:03","Конаково ГРЭС",true],
+["6382","к","21:17","22:15","Зеленоград",false],
+["7570","э","21:22","21:56","Зеленоград",false],
+["6386","к","21:27","22:25","Зеленоград",false],
+["6720","п","21:37","22:35","Тверь",true],
+["6618","к","21:57","22:54","Конаково ГРЭС",true],
+["6418","к","22:07","23:05","Подсолнечная",true],
+["6524","к","22:27","23:26","Клин",true],
+["6388","к","22:47","23:45","Зеленоград",false],
+["7578","э","23:02","23:41","Зеленоград",false],
+["6894","к","23:17","00:15","Зеленоград",false],
+["6390","к","23:27","00:25","Зеленоград",false],
+["6620","к","23:47","00:44","Решетниково",true],
+];
+
+const menuSets = [
+  {data: menuPodsolnechnayaMoskva, arrLabel: "Москва", note: "Время прибытия в Москву — фактическое, по данным Яндекс.Расписаний.", showAlabushevo: false, liveUrl: "https://rasp.yandex.ru/suburban/podsolnechnaya--moscow-oktyabrskaya/today"},
+  {data: menuMoscowPodsolnechnaya, arrLabel: "Подсолнечная", note: "Отмечены рейсы, которые заезжают в Алабушево.", showAlabushevo: true, liveUrl: "https://rasp.yandex.ru/suburban/moscow--solnechnogorsk"},
+  {data: menuMoscowKryukovo, arrLabel: "Зеленоград", note: "Отмечены рейсы, которые заезжают в Алабушево.", showAlabushevo: true, liveUrl: "https://rasp.yandex.ru/suburban/moscow-oktyabrskaya--kryukovo-train-station/today"},
+];
+let currentMenu = 0;
+
+function setMenu(i){
+  currentMenu = i;
+  document.querySelectorAll('.menu-tab').forEach((el,idx)=>el.classList.toggle('active', idx===i));
+  document.getElementById('menuIndicator').style.transform = `translateX(${i * 100}%)`;
+  renderMenu();
+}
+
+function trainType(cat){
+  return cat || "";
+}
+
+function durationText(dep, arr){
+  const [dh,dm] = dep.split(":").map(Number);
+  const [ah,am] = arr.split(":").map(Number);
+  let diff = (ah*60+am) - (dh*60+dm);
+  if(diff < 0) diff += 24*60;
+  const h = Math.floor(diff/60), m = diff%60;
+  return h>0 ? `${h} ч ${m ? m+' м':''}`.trim() : `${m} м`;
+}
+
+function renderMenu(){
+  const set = menuSets[currentMenu];
+  const list = document.getElementById('menuList');
+  list.innerHTML = set.data.map(([num,cat,dep,arr,dest,alabushevo])=>`
+    <div class="menu-row">
+      <div class="num">№${num}${trainType(cat)}</div>
+      <div class="dep">${dep}</div>
+      <div class="arrow">→</div>
+      <div class="arr">${arr}</div>
+      <div class="dest">${durationText(dep,arr)}</div>
+      ${set.showAlabushevo ? `<div class="alab ${alabushevo ? 'yes':'no'}">${alabushevo ? '✓':'—'}</div>` : ''}
+    </div>`).join("");
+}
+
+function toggleTheme(){
+  const isBeige = document.body.classList.toggle('theme-beige');
+  document.getElementById('themeToggle').textContent = isBeige ? 'Тёмная тема' : 'Бежевая тема';
+}
+
+function initBoard(){
+  buildRail();
+  render();
+  renderMenu();
+  document.querySelectorAll('.drop-in, .rise-in').forEach(el=>{
+    el.addEventListener('animationend', function handler(){
+      el.classList.remove('drop-in','rise-in','d1','d2','d3');
+      el.removeEventListener('animationend', handler);
+    });
+  });
+}
+
+const SITE_PASSWORD = "04";
+
+function unlock(){
+  document.getElementById('pageWrap').style.display = '';
+  const lock = document.getElementById('lockScreen');
+  lock.classList.add('hidden');
+  window.setTimeout(()=>{ lock.style.display = 'none'; }, 300);
+  initBoard();
+}
+
+function checkPassword(){
+  const input = document.getElementById('lockInput');
+  if(input.value === SITE_PASSWORD){
+    sessionStorage.setItem('boardUnlocked', '1');
+    unlock();
+  } else {
+    document.getElementById('lockError').classList.add('show');
+    input.value = '';
+    input.focus();
+  }
+}
+
+document.getElementById('lockInput').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') checkPassword();
+});
+
+if(sessionStorage.getItem('boardUnlocked') === '1'){
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('pageWrap').style.display = '';
+  initBoard();
+}
+</script>
+</body>
+</html>
