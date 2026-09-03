@@ -301,6 +301,7 @@
     font-size: 13px;
     display:flex;
     gap:10px;
+    cursor: pointer;
     animation: slotIn .4s var(--ease) both;
     animation-delay: calc(var(--i, 0) * 0.045s);
     will-change: opacity, transform;
@@ -489,6 +490,105 @@
   }
   .menu-row .alab.yes{ color: var(--free); }
   .menu-row .alab.no{ color: var(--text-dim); }
+  /* Detail sheet — opens when a class/pair is tapped. Not full-screen:
+     capped height, slides up from the bottom, easy to dismiss by tapping
+     the scrim, swiping down on the grabber, the close button, or Esc. */
+  .sheet-scrim{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .28s var(--ease);
+    z-index: 998;
+  }
+  .sheet-scrim.open{ opacity:1; pointer-events:auto; }
+
+  .detail-sheet{
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    width: min(92vw, 460px);
+    max-height: 62vh;
+    transform: translate(-50%, 100%);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -14px 40px -12px rgba(0,0,0,0.5);
+    padding: 10px 22px calc(22px + env(safe-area-inset-bottom, 0px));
+    z-index: 999;
+    transition: transform .32s cubic-bezier(.22,1,.36,1);
+  }
+  .detail-sheet.open{ transform: translate(-50%, 0); }
+  .detail-sheet.dragging{ transition: none; }
+  .detail-sheet.andrey .sheet-time{ color: var(--andrey); }
+  .detail-sheet.anya .sheet-time{ color: var(--anya); }
+  .detail-sheet.andrey .sheet-meta span::before{ background: var(--andrey); }
+  .detail-sheet.anya .sheet-meta span::before{ background: var(--anya); }
+
+  .sheet-grabber{
+    width: 40px;
+    height: 4px;
+    border-radius: 3px;
+    background: var(--line);
+    margin: 4px auto 14px;
+    cursor: grab;
+    touch-action: none;
+  }
+  .sheet-close{
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    transition: color .2s var(--ease), border-color .2s var(--ease), transform .15s var(--ease);
+  }
+  .sheet-close:hover{ color: var(--text); border-color: var(--andrey-dim); }
+  .sheet-close:active{ transform: scale(.92); }
+  .sheet-body{
+    max-height: calc(62vh - 60px);
+    overflow-y: auto;
+    touch-action: pan-y;
+  }
+  .sheet-time{
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .5px;
+  }
+  .sheet-title{
+    margin: 6px 0 14px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .sheet-meta{
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .sheet-meta span{
+    position: relative;
+    padding-left: 16px;
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .sheet-meta span::before{
+    content: "";
+    position: absolute;
+    left: 0; top: 6px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-dim);
+  }
+
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
   }
@@ -540,6 +640,17 @@
     <div class="menu-list" id="menuList"></div>
   </div>
 
+</div>
+
+<div class="sheet-scrim" id="sheetScrim" onclick="closeSheet()"></div>
+<div class="detail-sheet" id="detailSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" aria-hidden="true">
+  <div class="sheet-grabber" id="sheetGrabber" aria-hidden="true"></div>
+  <button class="sheet-close" onclick="closeSheet()" aria-label="Закрыть">✕</button>
+  <div class="sheet-body">
+    <div class="sheet-time" id="sheetTime"></div>
+    <h3 class="sheet-title" id="sheetTitle"></h3>
+    <div class="sheet-meta" id="sheetMeta"></div>
+  </div>
 </div>
 
 <script>
@@ -652,6 +763,11 @@ const dateList = [
 
 const weekdayNames = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
 
+// Расписание Ани в объекте anya{} задано по дню недели (для повторения на
+// каждой неделе), но реально известно только на 1–6 сентября. С 7 сентября
+// достоверных данных нет — не подставляем их как факт.
+const ANYA_SCHEDULE_KNOWN_UNTIL = "2026-09-06";
+
 // Cache DOM lookups once instead of re-querying on every render/update.
 const dom = {
   rail: document.getElementById('dateRail'),
@@ -666,6 +782,12 @@ const dom = {
   menuList: document.getElementById('menuList'),
   menuIndicator: document.getElementById('menuIndicator'),
   themeToggle: document.getElementById('themeToggle'),
+  sheetScrim: document.getElementById('sheetScrim'),
+  sheet: document.getElementById('detailSheet'),
+  sheetGrabber: document.getElementById('sheetGrabber'),
+  sheetTime: document.getElementById('sheetTime'),
+  sheetTitle: document.getElementById('sheetTitle'),
+  sheetMeta: document.getElementById('sheetMeta'),
 };
 
 function todayISO(){
@@ -789,7 +911,9 @@ function parseRange(t){
   return [sh*60+sm, eh*60+em];
 }
 
-function renderSlots(container, items, emptyText){
+let dayItems = { andrey: [], anya: [] };
+
+function renderSlots(container, items, emptyText, person){
   if(items.length===0){
     container.innerHTML = `<div class="empty-day">${emptyText}</div>`;
     return;
@@ -804,7 +928,8 @@ function renderSlots(container, items, emptyText){
       else if(now > range[1]) cls += " past";
     }
     return `
-      <div class="${cls}" style="--i:${i}">
+      <div class="${cls}" style="--i:${i}" onclick="openSlot('${person}', ${i})"
+           tabindex="0" role="button" aria-haspopup="dialog">
         <div class="time">${it.t}</div>
         <div class="what"><b>${it.w}</b><span>${it.d}</span></div>
       </div>`;
@@ -818,26 +943,128 @@ function render(){
     + (currentDate===TODAY ? " · сегодня" : "");
 
   const aItems = andrey[currentDate] || [];
-  renderSlots(dom.andreySlots, aItems, "Пар нет — весь день свободен");
+  dayItems.andrey = aItems;
+  renderSlots(dom.andreySlots, aItems, "Пар нет — весь день свободен", 'andrey');
   dom.andreyFree.textContent = freeTagText(aItems, "весь день", "занят весь день");
 
-  const anItems = anya[wIdx] || [];
-  renderSlots(dom.anyaSlots, anItems, "Пар нет — весь день свободна");
-  dom.anyaFree.textContent = freeTagText(anItems, "весь день", "занята весь день");
+  // Расписание Ани подтверждено только на первую неделю (1–6 сент).
+  // С 7 сентября оно ещё не опубликовано, поэтому вместо повтора недельного
+  // шаблона (это было бы просто догадкой) показываем его как неизвестное.
+  const anyaKnown = currentDate <= ANYA_SCHEDULE_KNOWN_UNTIL;
+  const anItems = anyaKnown ? (anya[wIdx] || []) : [];
+  dayItems.anya = anItems;
+  renderSlots(dom.anyaSlots, anItems, anyaKnown ? "Пар нет — весь день свободна" : "Расписание пока не опубликовано", 'anya');
+  dom.anyaFree.textContent = anyaKnown ? freeTagText(anItems, "весь день", "занята весь день") : "неизвестно";
 
   const note = dom.meetNote;
-  const bothFree = aItems.length===0 && anItems.length===0;
+  const bothFree = aItems.length===0 && anItems.length===0 && anyaKnown;
   if(bothFree){
     note.innerHTML = `<b>Оба свободны весь день</b> — хороший день, чтобы встретиться, например в Зеленограде-Крюкове. Электричка Подсолнечная → Крюково идёт по тому же Ленинградскому направлению.`;
   } else {
     const aPhrase = aItems.length===0 ? "свободен весь день"
       : (lastEnd(aItems) ? `освобождается к <b>${lastEnd(aItems)}</b>` : "занят весь день");
-    const anPhrase = anItems.length===0 ? "свободна весь день"
+    const anPhrase = !anyaKnown ? "расписание пока не опубликовано"
+      : anItems.length===0 ? "свободна весь день"
       : (lastEnd(anItems) ? `освобождается к <b>${lastEnd(anItems)}</b>` : "занята весь день");
     note.innerHTML = `Андрей ${aPhrase}, Аня ${anPhrase}.`;
   }
   replayAnim(note);
 }
+
+// --- Detail sheet: tap a class to see it, dismiss it just as easily ---
+// (tap the scrim, tap ✕, press Esc, or swipe the sheet down).
+let lastFocused = null;
+
+// Полные ФИО части преподавателей — известны не для всех, поэтому в общем
+// расписании (data выше) оставлены исходные инициалы, а расшифровка
+// показывается только в карточке пары (см. openSlot).
+const teacherFullNames = {
+  "Никифорова А.В.": "Никифорова Анна Валентиновна",
+  "Матвеев Е.М.": "Матвеев Евгений Михайлович",
+  "Артемов Д.Ю.": "Артемов Даниил Юрьевич",
+  "Морозенкова М.С.": "Морозенкова Марина Сергеевна",
+  "Максимова Л.Н.": "Максимова Людмила Николаевна",
+  "Куанова И.Б.": "Куанова Инесса Бакытжановна",
+  "Филина Е.И.": "Филина Елена Ивановна",
+  "Кашпарова В.С.": "Кашпарова Валентина Сергеевна",
+  "Маняхина В.Г.": "Маняхина Валентина Геннадьевна",
+  "Чуйкова Н.В.": "Чуйкова Наталия Владимировна",
+  "Гульянц С.С.": "Гульянц Светлана Станиславовна",
+  "Болашенко П.А.": "Болашенко Павел Аркадьевич",
+  "Кулешов А.Е.": "Кулешов Александр Евгеньевич",
+  "Погибельский А.П.": "Погибельский Александр Прохорович",
+  "Слюсарь М.В.": "Слюсарь Мария Владимировна",
+  "Пахомова Ю.Д.": "Пахомова Юлия Дмитриевна",
+  "Коночкин К.Н.": "Коночкин Константин Николаевич",
+  "Зыков А.В.": "Зыков Алексей Владимирович",
+  "Трифонов А.Ю.": "Трифонов Алексей Юрьевич",
+  "Прокофьев А.А.": "Прокофьев Александр Александрович",
+};
+
+function openSlot(person, idx){
+  const it = dayItems[person] && dayItems[person][idx];
+  if(!it) return;
+  lastFocused = document.activeElement;
+
+  dom.sheet.classList.remove('andrey','anya');
+  dom.sheet.classList.add(person);
+  dom.sheetTime.textContent = it.t;
+  dom.sheetTitle.textContent = it.w;
+  dom.sheetMeta.innerHTML = it.d.split("·").map(part=>{
+    const trimmed = part.trim();
+    const full = teacherFullNames[trimmed];
+    return `<span>${full || trimmed}</span>`;
+  }).join("");
+
+  dom.sheetScrim.classList.add('open');
+  dom.sheet.classList.add('open');
+  dom.sheet.setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+  dom.sheet.querySelector('.sheet-close').focus({preventScroll:true});
+}
+
+function closeSheet(){
+  if(!dom.sheet.classList.contains('open')) return;
+  dom.sheetScrim.classList.remove('open');
+  dom.sheet.classList.remove('open');
+  dom.sheet.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+  if(lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus({preventScroll:true});
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape') closeSheet();
+});
+
+// Drag the sheet (or its grabber) down to dismiss, like a native bottom sheet.
+(function initSheetDrag(){
+  let startY = 0, dragging = false, sheetHeight = 0;
+  const start = (y)=>{
+    dragging = true;
+    startY = y;
+    sheetHeight = dom.sheet.getBoundingClientRect().height;
+    dom.sheet.classList.add('dragging');
+  };
+  const move = (y)=>{
+    if(!dragging) return;
+    const delta = Math.max(0, y - startY);
+    dom.sheet.style.transform = `translate(-50%, ${delta}px)`;
+  };
+  const end = (y)=>{
+    if(!dragging) return;
+    dragging = false;
+    dom.sheet.classList.remove('dragging');
+    dom.sheet.style.transform = '';
+    const delta = Math.max(0, y - startY);
+    if(delta > sheetHeight * 0.28){
+      closeSheet();
+    }
+  };
+  dom.sheetGrabber.addEventListener('pointerdown', e=>start(e.clientY));
+  window.addEventListener('pointermove', e=>{ if(dragging) move(e.clientY); });
+  window.addEventListener('pointerup', e=>end(e.clientY));
+  window.addEventListener('pointercancel', ()=>{ dragging=false; dom.sheet.classList.remove('dragging'); dom.sheet.style.transform=''; });
+})();
 
 const menuPodsolnechnayaMoskva = [
 ["6501","к","03:55","05:09","Москва"],
