@@ -166,10 +166,10 @@
     cursor: pointer;
     text-align:center;
     line-height:1.3;
-    transition: border-color .25s var(--ease), color .25s var(--ease), transform .18s var(--ease), box-shadow .25s var(--ease), background-color .25s var(--ease);
+    transition: border-color .25s var(--ease), color .25s var(--ease), transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .25s var(--ease), background-color .25s var(--ease);
   }
-  .date-pill:hover{ transform: translateY(-2px); border-color: var(--andrey-dim); }
-  .date-pill:active{ transform: translateY(0) scale(.97); }
+  .date-pill:hover{ transform: translateY(-3px); border-color: var(--andrey-dim); }
+  .date-pill:active{ transform: translateY(0) scale(.96); }
   .date-pill b{display:block; font-size:15.5px; color: var(--text); font-weight:700; transition: color .25s var(--ease);}
   .date-pill.active{
     border-color: var(--andrey);
@@ -181,20 +181,72 @@
   .date-pill.off b{color: var(--text-dim);}
   .date-pill.pop{ animation: pillPop .4s cubic-bezier(.34,1.56,.64,1); }
 
+  .day-title-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin: 0 0 18px;
+    position:relative;
+  }
   .day-title{
     font-size: 14.5px;
     font-weight:600;
     color: var(--text-dim);
     text-align:center;
-    margin: 0 0 18px;
+    margin: 0;
     letter-spacing: 1.5px;
     text-transform: uppercase;
   }
+  .today-btn{
+    position:absolute;
+    right:0;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-family:inherit;
+    font-size: 11px;
+    font-weight:700;
+    letter-spacing: .3px;
+    cursor:pointer;
+    opacity:0;
+    pointer-events:none;
+    transform: translateY(-50%) scale(.9);
+    top:50%;
+    transition: opacity .25s var(--ease), transform .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease);
+  }
+  .today-btn.show{
+    opacity:1;
+    pointer-events:auto;
+    transform: translateY(-50%) scale(1);
+  }
+  .today-btn:hover{ color: var(--text); border-color: var(--andrey-dim); }
+  .today-btn:active{ transform: translateY(-50%) scale(.94); }
+
+  .date-pill{ position:relative; }
+  .date-pill.today::after{
+    content:"";
+    position:absolute;
+    top:6px; right:6px;
+    width:6px; height:6px;
+    border-radius:50%;
+    background: var(--anya);
+    box-shadow: 0 0 0 0 var(--anya-soft);
+    animation: todayPulse 2.2s ease-out infinite;
+  }
+  .date-pill.today.active::after{ background: var(--bg); }
+  @keyframes todayPulse{
+    0%{ box-shadow: 0 0 0 0 rgba(195,79,104,.45); }
+    70%{ box-shadow: 0 0 0 6px rgba(195,79,104,0); }
+    100%{ box-shadow: 0 0 0 0 rgba(195,79,104,0); }
+  }
 
   .content-swap{
-    transition: opacity .24s var(--ease), transform .24s var(--ease);
+    transition: opacity .26s var(--ease), transform .26s var(--ease);
   }
-  .content-swap.swapping{ opacity:0; transform: translateY(6px); }
+  .content-swap.swapping{ opacity:0; transform: translateY(6px) scale(.99); }
 
   .columns{
     display:grid;
@@ -212,6 +264,11 @@
     border-radius: 14px;
     overflow:hidden;
     box-shadow: var(--shadow);
+    transition: transform .35s var(--ease), box-shadow .35s var(--ease), background-color .35s var(--ease), border-color .35s var(--ease);
+  }
+  .col:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px -14px rgba(0,0,0,0.5);
   }
   .col-head{
     padding: 13px 16px;
@@ -240,15 +297,39 @@
   .slot{
     padding: 10px 16px;
     border-bottom: 1px solid var(--line);
+    border-left: 3px solid transparent;
     font-size: 13px;
     display:flex;
     gap:10px;
     animation: slotIn .4s var(--ease) both;
     animation-delay: calc(var(--i, 0) * 0.045s);
     will-change: opacity, transform;
+    transition: background-color .3s var(--ease), border-left-color .3s var(--ease), padding-left .3s var(--ease);
   }
   .slot:hover{ background: var(--panel-2); }
   .slot:last-child{border-bottom:none;}
+  .slot.now{
+    background: var(--anya-soft);
+    border-left-color: var(--anya);
+    padding-left: 13px;
+  }
+  .slot.now .time{ color: var(--anya); }
+  .slot.now .time::after{
+    content: "сейчас";
+    display:block;
+    margin-top:3px;
+    font-size:9.5px;
+    font-weight:700;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    color: var(--anya);
+    animation: fadePulse 1.8s ease-in-out infinite;
+  }
+  .slot.past{ opacity:.5; }
+  @keyframes fadePulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:.45; }
+  }
   .slot .time{
     color: var(--text-dim);
     flex: 0 0 84px;
@@ -352,11 +433,32 @@
     gap: 10px;
     padding: 8px 4px;
     border-bottom: 1px solid var(--line);
+    border-left: 3px solid transparent;
     font-size: 13px;
-    transition: background-color .2s var(--ease);
+    transition: background-color .25s var(--ease), border-left-color .25s var(--ease), opacity .25s var(--ease);
     -webkit-tap-highlight-color: transparent;
+    animation: slotIn .35s var(--ease) both;
+    animation-delay: calc(var(--i, 0) * 0.02s);
   }
   .menu-row:hover{ background: var(--panel-2); }
+  .menu-row.past{ opacity: .4; }
+  .menu-row.next{
+    background: var(--anya-soft);
+    border-left-color: var(--anya);
+  }
+  .menu-row.next .dep{ color: var(--anya); }
+  .menu-row .soon-tag{
+    flex: 0 0 auto;
+    font-size: 9.5px;
+    font-weight:700;
+    letter-spacing:.4px;
+    text-transform:uppercase;
+    color: var(--anya);
+    background: var(--anya-soft);
+    padding: 2px 6px;
+    border-radius: 6px;
+    animation: fadePulse 1.8s ease-in-out infinite;
+  }
   .menu-row .num{
     flex: 0 0 52px;
     color: var(--text-dim);
@@ -387,81 +489,6 @@
   }
   .menu-row .alab.yes{ color: var(--free); }
   .menu-row .alab.no{ color: var(--text-dim); }
-  .lock-screen{
-    position:fixed;
-    inset:0;
-    background: var(--bg);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index: 999;
-    padding: 20px;
-    transition: opacity .3s var(--ease);
-  }
-  .lock-screen.hidden{
-    opacity:0;
-    pointer-events:none;
-  }
-  .lock-box{
-    width:100%;
-    max-width: 300px;
-    text-align:center;
-  }
-  .lock-kicker{
-    letter-spacing: 2px;
-    color: var(--text-dim);
-    font-size: 11px;
-    font-weight:600;
-    text-transform:uppercase;
-    margin-bottom: 10px;
-  }
-  .lock-title{
-    color: var(--text);
-    font-size: 19px;
-    font-weight:700;
-    margin-bottom: 18px;
-  }
-  .lock-input{
-    width:100%;
-    background: var(--panel);
-    border: 1px solid var(--line);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 18px;
-    text-align:center;
-    letter-spacing: 4px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    outline:none;
-    transition: border-color .2s var(--ease);
-  }
-  .lock-input:focus{ border-color: var(--andrey); }
-  .lock-btn{
-    width:100%;
-    background: var(--anya);
-    border:none;
-    color:#fff;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight:700;
-    padding: 12px 14px;
-    border-radius: 12px;
-    cursor:pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: opacity .2s var(--ease), transform .15s var(--ease);
-  }
-  .lock-btn:hover{ opacity:.9; }
-  .lock-btn:active{ transform: scale(.97); }
-  .lock-error{
-    color: var(--anya);
-    font-size: 12.5px;
-    margin-top: 12px;
-    opacity:0;
-    transition: opacity .2s var(--ease);
-  }
-  .lock-error.show{ opacity:1; }
-
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
   }
@@ -469,28 +496,21 @@
 </head>
 <body>
 
-<div class="lock-screen" id="lockScreen">
-  <div class="lock-box">
-    <div class="lock-kicker">Расписание — Андрей &amp; Аня</div>
-    <div class="lock-title">Введите пароль</div>
-    <input type="password" id="lockInput" class="lock-input" inputmode="numeric" autocomplete="off" autofocus>
-    <button class="lock-btn" onclick="checkPassword()">Войти</button>
-    <div class="lock-error" id="lockError">Неверный пароль, попробуйте ещё раз</div>
-  </div>
-</div>
-
-<div class="wrap" id="pageWrap" style="display:none;">
+<div class="wrap" id="pageWrap">
 
   <div class="board-header">
     <div class="kicker drop-in d1">Расписание</div>
     <h1 class="drop-in d2">Андрей &amp; Аня</h1>
     <p class="drop-in d3">1–13 сентября 2026 — период адаптационного модуля</p>
-    <button id="themeToggle" class="theme-toggle drop-in d3" onclick="toggleTheme()">Бежевая тема</button>
+    <button id="themeToggle" class="theme-toggle drop-in d3" onclick="toggleTheme()" aria-pressed="false">Бежевая тема</button>
   </div>
 
   <div class="rise-in d1">
-    <div class="date-rail" id="dateRail"></div>
-    <div class="day-title" id="dayTitle"></div>
+    <div class="date-rail" id="dateRail" role="tablist" aria-label="Выбор дня"></div>
+    <div class="day-title-row">
+      <div class="day-title" id="dayTitle" aria-live="polite"></div>
+      <button class="today-btn" id="todayBtn" onclick="jumpToToday()" title="Вернуться к сегодняшнему дню">Сегодня</button>
+    </div>
   </div>
 
   <div class="content-swap rise-in d2" id="daySwap">
@@ -511,11 +531,11 @@
   <div class="menu-board rise-in d3">
     <h2>МЕНЮ ЭЛЕКТРИЧЕК — НА КАКОЙ УЕХАТЬ</h2>
     <p class="menu-sub">п — пригородная, к — «Ласточка Комфорт», э — «Ласточка Экспресс»</p>
-    <div class="menu-tabs">
+    <div class="menu-tabs" role="tablist">
       <div class="menu-tab-indicator" id="menuIndicator"></div>
-      <button class="menu-tab active" onclick="setMenu(0)">Подсолнечная → Москва</button>
-      <button class="menu-tab" onclick="setMenu(1)">Москва → Подсолнечная</button>
-      <button class="menu-tab" onclick="setMenu(2)">Москва → Зеленоград</button>
+      <button class="menu-tab active" role="tab" aria-selected="true" onclick="setMenu(0)">Подсолнечная → Москва</button>
+      <button class="menu-tab" role="tab" aria-selected="false" onclick="setMenu(1)">Москва → Подсолнечная</button>
+      <button class="menu-tab" role="tab" aria-selected="false" onclick="setMenu(2)">Москва → Зеленоград</button>
     </div>
     <div class="menu-list" id="menuList"></div>
   </div>
@@ -632,7 +652,38 @@ const dateList = [
 
 const weekdayNames = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
 
-let currentDate = "2026-09-01";
+// Cache DOM lookups once instead of re-querying on every render/update.
+const dom = {
+  rail: document.getElementById('dateRail'),
+  dayTitle: document.getElementById('dayTitle'),
+  todayBtn: document.getElementById('todayBtn'),
+  daySwap: document.getElementById('daySwap'),
+  andreySlots: document.getElementById('andreySlots'),
+  andreyFree: document.getElementById('andreyFree'),
+  anyaSlots: document.getElementById('anyaSlots'),
+  anyaFree: document.getElementById('anyaFree'),
+  meetNote: document.getElementById('meetNote'),
+  menuList: document.getElementById('menuList'),
+  menuIndicator: document.getElementById('menuIndicator'),
+  themeToggle: document.getElementById('themeToggle'),
+};
+
+function todayISO(){
+  const d = new Date();
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+const TODAY = todayISO();
+
+// Open on today's date automatically; if today falls outside the printed
+// range, fall back to the nearest edge (first date before it starts, last
+// date once it's over) instead of always showing day one.
+function pickInitialDate(){
+  if(dateList.some(([iso])=>iso===TODAY)) return TODAY;
+  if(TODAY < dateList[0][0]) return dateList[0][0];
+  return dateList[dateList.length-1][0];
+}
+let currentDate = pickInitialDate();
 
 function weekdayIndex(dateStr){
   const d = new Date(dateStr + "T00:00:00");
@@ -653,16 +704,23 @@ function freeTagText(items, allDayFreeText, busyAllDayText){
 }
 
 function buildRail(){
-  const rail = document.getElementById('dateRail');
-  rail.innerHTML = "";
+  const frag = document.createDocumentFragment();
   dateList.forEach(([iso,label,wd])=>{
     const pill = document.createElement('div');
-    pill.className = 'date-pill' + (iso===currentDate ? ' active':'') + ((wd==="Сб"||wd==="Вс")?' off':'');
+    pill.className = 'date-pill'
+      + (iso===currentDate ? ' active':'')
+      + ((wd==="Сб"||wd==="Вс")?' off':'')
+      + (iso===TODAY ? ' today':'');
     pill.dataset.iso = iso;
+    pill.setAttribute('role','tab');
+    pill.setAttribute('aria-selected', iso===currentDate ? 'true':'false');
+    pill.title = iso===TODAY ? `${label} — сегодня` : label;
     pill.innerHTML = `<b>${label}</b>${wd}`;
     pill.onclick = ()=>{ if(iso!==currentDate){ currentDate = iso; goToDate(); } };
-    rail.appendChild(pill);
+    frag.appendChild(pill);
   });
+  dom.rail.innerHTML = "";
+  dom.rail.appendChild(frag);
 }
 
 function replayAnim(el){
@@ -672,10 +730,12 @@ function replayAnim(el){
 }
 
 function updateActivePill(){
-  document.querySelectorAll('.date-pill').forEach(p=>{
-    p.classList.toggle('active', p.dataset.iso === currentDate);
+  dom.rail.querySelectorAll('.date-pill').forEach(p=>{
+    const isActive = p.dataset.iso === currentDate;
+    p.classList.toggle('active', isActive);
+    p.setAttribute('aria-selected', isActive ? 'true':'false');
   });
-  const activePill = document.querySelector('.date-pill.active');
+  const activePill = dom.rail.querySelector('.date-pill.active');
   if(activePill){
     replayAnim(activePill);
     activePill.classList.remove('pop');
@@ -683,50 +743,89 @@ function updateActivePill(){
     activePill.classList.add('pop');
     activePill.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
   }
+  dom.todayBtn.classList.toggle('show', currentDate !== TODAY);
 }
 
 function goToDate(){
   updateActivePill();
-  const swap = document.getElementById('daySwap');
-  swap.classList.add('swapping');
+  dom.daySwap.classList.add('swapping');
   window.setTimeout(()=>{
     render();
-    requestAnimationFrame(()=>{ swap.classList.remove('swapping'); });
+    requestAnimationFrame(()=>{ dom.daySwap.classList.remove('swapping'); });
   }, 220);
+}
+
+function jumpToToday(){
+  const target = pickInitialDate();
+  if(target !== currentDate){
+    currentDate = target;
+    goToDate();
+  }
+}
+
+// Left/right arrow keys move between days — handy once you're scrolled
+// away from the rail, and costs nothing for mouse/touch users.
+document.addEventListener('keydown', e=>{
+  if(e.target && ['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const idx = dateList.findIndex(d=>d[0]===currentDate);
+  const next = idx + (e.key==='ArrowRight' ? 1 : -1);
+  if(next < 0 || next >= dateList.length) return;
+  currentDate = dateList[next][0];
+  goToDate();
+});
+
+// Minutes-since-midnight helper used to work out what's happening "now".
+function minutesNow(){
+  const d = new Date();
+  return d.getHours()*60 + d.getMinutes();
+}
+function parseRange(t){
+  const parts = t.split("–");
+  if(parts.length!==2) return null;
+  const [sh,sm] = parts[0].split(":").map(Number);
+  const [eh,em] = parts[1].split(":").map(Number);
+  if([sh,sm,eh,em].some(Number.isNaN)) return null;
+  return [sh*60+sm, eh*60+em];
+}
+
+function renderSlots(container, items, emptyText){
+  if(items.length===0){
+    container.innerHTML = `<div class="empty-day">${emptyText}</div>`;
+    return;
+  }
+  const isToday = currentDate === TODAY;
+  const now = isToday ? minutesNow() : null;
+  container.innerHTML = items.map((it,i)=>{
+    const range = isToday ? parseRange(it.t) : null;
+    let cls = "slot";
+    if(range){
+      if(now >= range[0] && now <= range[1]) cls += " now";
+      else if(now > range[1]) cls += " past";
+    }
+    return `
+      <div class="${cls}" style="--i:${i}">
+        <div class="time">${it.t}</div>
+        <div class="what"><b>${it.w}</b><span>${it.d}</span></div>
+      </div>`;
+  }).join("");
 }
 
 function render(){
   const wIdx = weekdayIndex(currentDate);
-  document.getElementById('dayTitle').textContent =
-    dateList.find(d=>d[0]===currentDate)[1] + " · " + weekdayNames[wIdx];
+  dom.dayTitle.textContent =
+    dateList.find(d=>d[0]===currentDate)[1] + " · " + weekdayNames[wIdx]
+    + (currentDate===TODAY ? " · сегодня" : "");
 
   const aItems = andrey[currentDate] || [];
-  const andreySlotsEl = document.getElementById('andreySlots');
-  if(aItems.length===0){
-    andreySlotsEl.innerHTML = `<div class="empty-day">Пар нет — весь день свободен</div>`;
-  } else {
-    andreySlotsEl.innerHTML = aItems.map((it,i)=>`
-      <div class="slot" style="--i:${i}">
-        <div class="time">${it.t}</div>
-        <div class="what"><b>${it.w}</b><span>${it.d}</span></div>
-      </div>`).join("");
-  }
-  document.getElementById('andreyFree').textContent = freeTagText(aItems, "весь день", "занят весь день");
+  renderSlots(dom.andreySlots, aItems, "Пар нет — весь день свободен");
+  dom.andreyFree.textContent = freeTagText(aItems, "весь день", "занят весь день");
 
   const anItems = anya[wIdx] || [];
-  const anyaSlotsEl = document.getElementById('anyaSlots');
-  if(anItems.length===0){
-    anyaSlotsEl.innerHTML = `<div class="empty-day">Пар нет — весь день свободна</div>`;
-  } else {
-    anyaSlotsEl.innerHTML = anItems.map((it,i)=>`
-      <div class="slot" style="--i:${i}">
-        <div class="time">${it.t}</div>
-        <div class="what"><b>${it.w}</b><span>${it.d}</span></div>
-      </div>`).join("");
-  }
-  document.getElementById('anyaFree').textContent = freeTagText(anItems, "весь день", "занята весь день");
+  renderSlots(dom.anyaSlots, anItems, "Пар нет — весь день свободна");
+  dom.anyaFree.textContent = freeTagText(anItems, "весь день", "занята весь день");
 
-  const note = document.getElementById('meetNote');
+  const note = dom.meetNote;
   const bothFree = aItems.length===0 && anItems.length===0;
   if(bothFree){
     note.innerHTML = `<b>Оба свободны весь день</b> — хороший день, чтобы встретиться, например в Зеленограде-Крюкове. Электричка Подсолнечная → Крюково идёт по тому же Ленинградскому направлению.`;
@@ -1040,8 +1139,11 @@ let currentMenu = 0;
 
 function setMenu(i){
   currentMenu = i;
-  document.querySelectorAll('.menu-tab').forEach((el,idx)=>el.classList.toggle('active', idx===i));
-  document.getElementById('menuIndicator').style.transform = `translateX(${i * 100}%)`;
+  document.querySelectorAll('.menu-tab').forEach((el,idx)=>{
+    el.classList.toggle('active', idx===i);
+    el.setAttribute('aria-selected', idx===i ? 'true':'false');
+  });
+  dom.menuIndicator.style.transform = `translateX(${i * 100}%)`;
   renderMenu();
 }
 
@@ -1060,21 +1162,39 @@ function durationText(dep, arr){
 
 function renderMenu(){
   const set = menuSets[currentMenu];
-  const list = document.getElementById('menuList');
-  list.innerHTML = set.data.map(([num,cat,dep,arr,dest,alabushevo])=>`
-    <div class="menu-row">
+  const now = minutesNow();
+  // Mark the single next departure so it's obvious at a glance which
+  // train to run for, and fade out ones that have already left today.
+  let nextIdx = -1, nextDiff = Infinity;
+  set.data.forEach(([,,dep], i)=>{
+    const [h,m] = dep.split(":").map(Number);
+    const diff = h*60+m - now;
+    if(diff >= 0 && diff < nextDiff){ nextDiff = diff; nextIdx = i; }
+  });
+  dom.menuList.innerHTML = set.data.map(([num,cat,dep,arr,dest,alabushevo], i)=>{
+    const [h,m] = dep.split(":").map(Number);
+    const isPast = (h*60+m) < now;
+    const isNext = i === nextIdx;
+    let cls = "menu-row";
+    if(isPast) cls += " past";
+    if(isNext) cls += " next";
+    return `
+    <div class="${cls}" style="--i:${i}">
       <div class="num">№${num}${trainType(cat)}</div>
       <div class="dep">${dep}</div>
       <div class="arrow">→</div>
       <div class="arr">${arr}</div>
       <div class="dest">${durationText(dep,arr)}</div>
+      ${isNext ? `<div class="soon-tag">через ${nextDiff} мин</div>` : ''}
       ${set.showAlabushevo ? `<div class="alab ${alabushevo ? 'yes':'no'}">${alabushevo ? '✓':'—'}</div>` : ''}
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
 function toggleTheme(){
   const isBeige = document.body.classList.toggle('theme-beige');
-  document.getElementById('themeToggle').textContent = isBeige ? 'Тёмная тема' : 'Бежевая тема';
+  dom.themeToggle.textContent = isBeige ? 'Тёмная тема' : 'Бежевая тема';
+  dom.themeToggle.setAttribute('aria-pressed', String(isBeige));
 }
 
 function initBoard(){
@@ -1087,39 +1207,16 @@ function initBoard(){
       el.removeEventListener('animationend', handler);
     });
   });
+  // Keep the "сейчас" / "следующая электричка" highlights accurate without
+  // needing a manual refresh — re-render just the parts that depend on
+  // the clock, once a minute, and again when the tab regains focus.
+  window.setInterval(()=>{ render(); renderMenu(); }, 60000);
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden){ render(); renderMenu(); }
+  });
 }
 
-const SITE_PASSWORD = "04";
-
-function unlock(){
-  document.getElementById('pageWrap').style.display = '';
-  const lock = document.getElementById('lockScreen');
-  lock.classList.add('hidden');
-  window.setTimeout(()=>{ lock.style.display = 'none'; }, 300);
-  initBoard();
-}
-
-function checkPassword(){
-  const input = document.getElementById('lockInput');
-  if(input.value === SITE_PASSWORD){
-    sessionStorage.setItem('boardUnlocked', '1');
-    unlock();
-  } else {
-    document.getElementById('lockError').classList.add('show');
-    input.value = '';
-    input.focus();
-  }
-}
-
-document.getElementById('lockInput').addEventListener('keydown', e=>{
-  if(e.key === 'Enter') checkPassword();
-});
-
-if(sessionStorage.getItem('boardUnlocked') === '1'){
-  document.getElementById('lockScreen').style.display = 'none';
-  document.getElementById('pageWrap').style.display = '';
-  initBoard();
-}
+initBoard();
 </script>
 </body>
 </html>
