@@ -2,44 +2,68 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<script>
+// Применяем сохранённую тему как можно раньше — до отрисовки, чтобы не
+// было вспышки дефолтной темы при перезаходе на сайт.
+(function(){
+  try{
+    var saved = localStorage.getItem('schedule-theme-andrey-anya');
+    if(saved){
+      document.documentElement.setAttribute('data-theme', saved);
+    } else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches){
+      // No explicit choice yet — follow the system scheme by default
+      // (light → terracotta) instead of always opening in dark mocha.
+      document.documentElement.setAttribute('data-theme', 'terracotta');
+    }
+  }catch(e){}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1512" id="themeColorMeta">
 <title>Табло — Андрей и Аня</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* Мокко — базовая тема (без data-theme), тёмная: эспрессо-шоколад +
+     карамель + бордо, в духе трендов 2026 (Pantone Mocha Mousse,
+     Benjamin Moore Silhouette). */
   :root{
-    --bg: #0d131c;
-    --panel: #151d29;
-    --panel-2: #1a2431;
-    --line: #26313f;
-    --andrey: #c7c0b0;
-    --andrey-dim: #948a78;
-    --andrey-soft: rgba(199,192,176,0.10);
-    --anya: #c34f68;
-    --anya-dim: #7f3247;
-    --anya-soft: rgba(195,79,104,0.14);
-    --text: #eceae0;
-    --text-dim: #8a9199;
-    --free: #7fd88f;
-    --shadow: 0 10px 30px -12px rgba(0,0,0,0.55);
+    color-scheme: dark;
+    --bg: #1a1512;
+    --panel: #241d17;
+    --panel-2: #2c231c;
+    --line: #3d3025;
+    --andrey: #d3a86a;
+    --andrey-dim: #a17f4d;
+    --andrey-soft: rgba(211,168,106,0.12);
+    --anya: #d1657b;
+    --anya-dim: #9c4b5c;
+    --anya-soft: rgba(209,101,123,0.15);
+    --text: #f0e4d4;
+    --text-dim: #a4907a;
+    --free: #8fbf7a;
+    --shadow: 0 10px 30px -12px rgba(0,0,0,0.6);
     --ease: cubic-bezier(.22,1,.36,1);
   }
-  body.theme-beige{
-    --bg: #f3ead9;
-    --panel: #fcf7ec;
-    --panel-2: #efe2ca;
-    --line: #ddccac;
-    --andrey: #6b4a35;
-    --andrey-dim: #8f6c52;
-    --andrey-soft: rgba(107,74,53,0.10);
-    --anya: #7a2740;
-    --anya-dim: #a8607a;
-    --anya-soft: rgba(122,39,64,0.10);
-    --text: #382f24;
-    --text-dim: #85765c;
-    --free: #4f7a4a;
-    --shadow: 0 10px 26px -14px rgba(80,60,20,0.28);
+  /* Терракота — светлая, глина/хаки + терракотовый (в духе трендов 2026:
+     Universal Khaki, terracotta & clay). */
+  :root[data-theme="terracotta"]{
+    color-scheme: light;
+    --bg: #f1e3d0;
+    --panel: #faf3e6;
+    --panel-2: #ecdcc3;
+    --line: #ddc6a4;
+    --andrey: #6b5a3a;
+    --andrey-dim: #8f7c56;
+    --andrey-soft: rgba(107,90,58,0.10);
+    --anya: #a34b2b;
+    --anya-dim: #7b3921;
+    --anya-soft: rgba(163,75,43,0.12);
+    --text: #382d1e;
+    --text-dim: #6c5e4a;
+    --free: #516839;
+    --shadow: 0 10px 26px -14px rgba(90,55,20,0.25);
   }
   *{box-sizing:border-box;}
   body{
@@ -53,9 +77,12 @@
   }
   .wrap{max-width: 800px; margin: 0 auto;}
 
-  body, .col, .meet-note, .menu-board, .date-pill, .theme-toggle, .menu-tabs, .slot{
-    transition: background-color .35s var(--ease), border-color .35s var(--ease), color .25s var(--ease), box-shadow .35s var(--ease) !important;
-  }
+  /* Раньше здесь было общее правило transition с !important на несколько
+     селекторов сразу. В CSS !important заменяет ВЕСЬ список transition-свойств
+     целиком, а не объединяется с локальными правилами — из-за этого подъём
+     карточек при hover, пульсация активной даты и подсветка "текущей пары"
+     переставали анимироваться. Теперь каждый селектор ниже сам перечисляет
+     полный список нужных ему transition-свойств (цвета темы + свои эффекты). */
 
   @keyframes dropIn{
     from{ opacity:0; transform: translateY(-10px); }
@@ -106,6 +133,7 @@
     background: linear-gradient(90deg, var(--andrey), var(--anya));
     border-radius: 2px;
     opacity:.55;
+    transition: background-image .35s var(--ease);
   }
   .board-header .kicker{
     letter-spacing: 2.5px;
@@ -123,27 +151,48 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    transition: background-image .4s var(--ease);
   }
   .board-header p{
     margin:0;
     color: var(--text-dim);
     font-size: 13.5px;
   }
-  .theme-toggle{
+  .theme-switcher{
     margin-top: 16px;
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    color: var(--text-dim);
-    padding: 7px 16px;
-    border-radius: 20px;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight:600;
-    cursor: pointer;
-    transition: border-color .25s var(--ease), color .25s var(--ease), transform .15s var(--ease);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap: 9px;
   }
-  .theme-toggle:hover{ color: var(--text); border-color: var(--andrey-dim); transform: translateY(-1px); }
-  .theme-toggle:active{ transform: translateY(0) scale(.96); }
+  .theme-swatch{
+    position: relative;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    padding: 0;
+    cursor: pointer;
+    background: var(--panel-2);
+    background-clip: padding-box;
+    transition: border-color .25s var(--ease), transform .15s var(--ease), box-shadow .25s var(--ease);
+  }
+  /* Same invisible hit-area bump as the menu tabs: keeps the 26px swatch
+     visually small while giving it a 44px tap target. */
+  .theme-swatch::after{
+    content:"";
+    position:absolute;
+    top:50%; left:50%;
+    width:max(44px, 100%);
+    height:max(44px, 100%);
+    transform:translate(-50%,-50%);
+  }
+  .theme-swatch:hover{ transform: translateY(-2px) scale(1.06); will-change: transform; }
+  .theme-swatch:active{ transform: translateY(0) scale(.94); }
+  .theme-swatch.active{
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--text-dim);
+  }
 
   .date-rail{
     display:flex;
@@ -224,8 +273,20 @@
   }
   .today-btn:hover{ color: var(--text); border-color: var(--andrey-dim); }
   .today-btn:active{ transform: translateY(-50%) scale(.94); }
+  .today-btn::after{
+    content:"";
+    position:absolute;
+    top:50%; left:50%;
+    width:max(44px, 100%);
+    height:max(44px, 100%);
+    transform:translate(-50%,-50%);
+  }
 
   .date-pill{ position:relative; }
+  /* Точка "сегодня": статичная точка (::after) + пульсирующее кольцо (::before).
+     Кольцо анимируется только через transform/opacity — это чистый композитинг
+     (без перерисовки каждый кадр), в отличие от прежней анимации box-shadow,
+     которая к тому же была жёстко завязана на цвет тёмной темы. */
   .date-pill.today::after{
     content:"";
     position:absolute;
@@ -233,14 +294,26 @@
     width:6px; height:6px;
     border-radius:50%;
     background: var(--anya);
-    box-shadow: 0 0 0 0 var(--anya-soft);
-    animation: todayPulse 2.2s ease-out infinite;
+    z-index:1;
+    transition: background-color .3s var(--ease);
   }
-  .date-pill.today.active::after{ background: var(--bg); }
+  .date-pill.today::before{
+    content:"";
+    position:absolute;
+    top:6px; right:6px;
+    width:6px; height:6px;
+    border-radius:50%;
+    background: var(--anya);
+    animation: todayPulse 2.2s ease-out infinite;
+    will-change: transform, opacity;
+    transition: background-color .3s var(--ease);
+  }
+  .date-pill.today.active::after,
+  .date-pill.today.active::before{ background: var(--bg); }
   @keyframes todayPulse{
-    0%{ box-shadow: 0 0 0 0 rgba(195,79,104,.45); }
-    70%{ box-shadow: 0 0 0 6px rgba(195,79,104,0); }
-    100%{ box-shadow: 0 0 0 0 rgba(195,79,104,0); }
+    0%{ transform: scale(1); opacity:.5; }
+    70%{ transform: scale(2.6); opacity:0; }
+    100%{ transform: scale(2.6); opacity:0; }
   }
 
   .content-swap{
@@ -279,10 +352,14 @@
     align-items:center;
     position:relative;
   }
+  .col-head{
+    transition: color .3s var(--ease);
+  }
   .col-head::before{
     content:"";
     position:absolute;
     top:0; left:0; right:0; height:3px;
+    transition: background-image .35s var(--ease);
   }
   .col.andrey .col-head{ color: var(--andrey); }
   .col.andrey .col-head::before{ background: linear-gradient(90deg, var(--andrey-dim), var(--andrey)); }
@@ -360,8 +437,9 @@
     box-shadow: var(--shadow);
     animation: slotIn .45s var(--ease) both;
     animation-delay: .1s;
+    transition: background-color .35s var(--ease), border-color .35s var(--ease), color .3s var(--ease);
   }
-  .meet-note b{color: var(--text);}
+  .meet-note b{color: var(--text); transition: color .3s var(--ease);}
 
   .menu-board{
     background: var(--panel);
@@ -370,6 +448,7 @@
     padding: 18px 18px 16px;
     margin-bottom: 18px;
     box-shadow: var(--shadow);
+    transition: background-color .35s var(--ease), border-color .35s var(--ease);
   }
   .menu-board h2{
     font-size: 13.5px;
@@ -377,12 +456,14 @@
     color: var(--andrey);
     margin: 0 0 4px;
     font-weight:800;
+    transition: color .3s var(--ease);
   }
   .menu-sub{
     font-size: 12px;
     color: var(--text-dim);
     margin: 0 0 14px;
     line-height: 1.5;
+    transition: color .3s var(--ease);
   }
   .menu-tabs{
     position:relative;
@@ -392,6 +473,7 @@
     border-radius: 12px;
     padding: 4px;
     margin-bottom: 14px;
+    transition: background-color .35s var(--ease), border-color .35s var(--ease);
   }
   .menu-tab-indicator{
     position:absolute;
@@ -417,9 +499,19 @@
     cursor:pointer;
     transition: color .35s var(--ease);
     -webkit-tap-highlight-color: transparent;
-    outline: none;
   }
   .menu-tab.active{ color: var(--bg); }
+  /* Invisible hit-area bump: the tab bar is compact (~32px tall visually),
+     under the 44px minimum that WCAG 2.5.8, Apple HIG and Material Design
+     all recommend for touch targets. Expanding via ::after keeps the tidy
+     visual height while widening what actually responds to a tap. */
+  .menu-tab::after{
+    content:"";
+    position:absolute;
+    top:50%; left:0; right:0;
+    height:max(44px, 100%);
+    transform:translateY(-50%);
+  }
   .menu-list{
     max-height: 340px;
     overflow-y: auto;
@@ -551,6 +643,14 @@
   }
   .sheet-close:hover{ color: var(--text); border-color: var(--andrey-dim); }
   .sheet-close:active{ transform: scale(.92); }
+  .sheet-close::after{
+    content:"";
+    position:absolute;
+    top:50%; left:50%;
+    width:max(44px, 100%);
+    height:max(44px, 100%);
+    transform:translate(-50%,-50%);
+  }
   .sheet-body{
     max-height: calc(62vh - 60px);
     overflow-y: auto;
@@ -587,7 +687,23 @@
     width: 6px; height: 6px;
     border-radius: 50%;
     background: var(--text-dim);
+    transition: background-color .3s var(--ease);
   }
+
+  /* Visible keyboard focus (WCAG 2.4.7 / 2.4.11) for every interactive
+     element on the board — date pills, class/train rows, tabs, and
+     buttons all only responded to pointer input before this. Scoped to
+     :focus-visible so mouse/touch users don't see a ring on click. */
+  .date-pill:focus-visible,
+  .slot:focus-visible,
+  .menu-tab:focus-visible,
+  .theme-swatch:focus-visible,
+  .today-btn:focus-visible,
+  .sheet-close:focus-visible{
+    outline: 2px solid var(--andrey);
+    outline-offset: 2px;
+  }
+  .theme-swatch:focus-visible{ outline-offset: 3px; }
 
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
@@ -602,7 +718,7 @@
     <div class="kicker drop-in d1">Расписание</div>
     <h1 class="drop-in d2">Андрей &amp; Аня</h1>
     <p class="drop-in d3">1–13 сентября 2026 — период адаптационного модуля</p>
-    <button id="themeToggle" class="theme-toggle drop-in d3" onclick="toggleTheme()" aria-pressed="false">Бежевая тема</button>
+    <div class="theme-switcher drop-in d3" id="themeSwitcher" role="group" aria-label="Выбор темы оформления"></div>
   </div>
 
   <div class="rise-in d1">
@@ -654,7 +770,10 @@
 </div>
 
 <script>
-const anya = {
+// Расписание Ани по неделям: у МИЭТ чередуются числитель/знаменатель,
+// поэтому это два разных объекта (каждый по дню недели), а не одно
+// повторяющееся расписание.
+const anyaWeek1 = {
   1: [
     {t:"09:00–10:20", w:"Линейная алгебра и аналит. геометрия", d:"практика · Болашенко П.А. · ауд. 3301"},
     {t:"10:30–11:50", w:"Физика: механика, термодинамика, электричество", d:"практика · Кулешов А.Е. · ауд. 3229"},
@@ -683,64 +802,101 @@ const anya = {
   0: [],
 };
 
+// Расписание на неделю с 7 сентября (понедельник и суббота совпали с
+// первой неделей, остальные дни — другие пары).
+const anyaWeek2 = {
+  1: [
+    {t:"09:00–10:20", w:"Линейная алгебра и аналит. геометрия", d:"практика · Болашенко П.А. · ауд. 3301"},
+    {t:"10:30–11:50", w:"Физика: механика, термодинамика, электричество", d:"практика · Кулешов А.Е. · ауд. 3229"},
+    {t:"12:00–13:20", w:"Основы математического анализа", d:"лекция · Погибельский А.П. · ауд. 1203М"},
+    {t:"14:00–15:20", w:"Информатика / Введение в информатику", d:"лекция · Слюсарь М.В. · ауд. 1205М"},
+    {t:"15:30–16:50", w:"Голос поколения. Молодёжь России", d:"лекция · Пахомова Ю.Д. · ДК МИЭТ"},
+  ],
+  2: [
+    {t:"09:00–10:20", w:"Основы российской государственности", d:"лекция · Штергер М.В. · ауд. 1202М"},
+    {t:"10:30–11:50", w:"Основы российской государственности", d:"практика · Штергер М.В. · ауд. 3128М"},
+    {t:"12:00–13:20", w:"Практикум по основам высшей математики", d:"лаб. · Коночкин К.Н. · ауд. 3118"},
+    {t:"14:00–15:20", w:"Практикум по основам высшей математики", d:"лаб. · Коночкин К.Н. · ауд. 3118"},
+  ],
+  3: [
+    {t:"09:00–10:20", w:"Основы математического анализа", d:"практика · Коночкин К.Н. · ауд. 3229"},
+    {t:"10:30–11:50", w:"Иностранный язык", d:"практика · Арефьева О.Н. (ауд. 3109М) или Горбачева Е.П. (ауд. 3128М)"},
+    {t:"12:00–13:20", w:"Физическая культура и спорт", d:"практика · ауд. 5101"},
+    {t:"14:00–15:20", w:"Физика: механика, термодинамика, электричество", d:"лаб. · Зыков А.В. · ауд. 3335А ОФ / 3333 ОФ"},
+  ],
+  4: [
+    {t:"10:30–11:50", w:"Линейная алгебра и аналит. геометрия", d:"практика · Болашенко П.А. · ауд. 4230"},
+    {t:"12:00–13:20", w:"Информатика", d:"лаб. · Корнеева М.В. · ауд. 3112"},
+    {t:"14:00–15:20", w:"Информатика", d:"лаб. · Корнеева М.В. · ауд. 3112"},
+  ],
+  5: [
+    {t:"09:00–10:20", w:"Физика: механика, термодинамика, электричество", d:"лекция · Трифонов А.Ю. · ауд. 1202М"},
+    {t:"10:30–11:50", w:"Физическая культура и спорт", d:"практика · ауд. 5101"},
+    {t:"14:00–15:20", w:"Линейная алгебра и аналит. геометрия", d:"лекция · Прокофьев А.А. · ауд. 1202М"},
+  ],
+  6: [
+    {t:"09:00–18:20", w:"Военная подготовка", d:"6 пар подряд · УВЦ 1"},
+  ],
+  0: [],
+};
+
+// Расписание Андрея — группа 107 (ВОМ23-ММИ2607), 3-я подгруппа.
+// Скопировано из проверенного расписания (index.html); для пар, которые
+// идут по подгруппам, выбран вариант 3-й подгруппы.
 const andrey = {
   "2026-09-01": [
     {t:"09:00–10:30", w:"Первый раз на первый курс", d:"ассист. Тихонов С.О. · ауд. 301"},
-    {t:"10:40–12:10", w:"Знакомство со структурой МПГУ и ИМИ", d:"дирекция ИМИ и кафедры · ауд. 402"},
-    {t:"12:40–14:10", w:"Знакомство с ЭБС МПГУ", d:"Курицина Т.В. · ауд. 301"},
-    {t:"14:20–15:50", w:"Основы российской государственности", d:"практика · Куанова И.Б. · ауд. 207"},
+    {t:"10:40–12:10", w:"Знакомство со структурой МПГУ и ИМИ", d:"Дирекция ИМИ и представители кафедр · ауд. 402"},
+    {t:"12:40–14:10", w:"Знакомство с ЭБС МПГУ", d:"Курицына Т.В. · ауд. 301"},
+    {t:"14:20–15:50", w:"Основы российской государственности", d:"практика · ассист. Куанова И.Б. · ауд. 207"},
   ],
   "2026-09-02": [
     {t:"09:00–10:30", w:"Знакомство со студ. самоуправлением и профсоюзом", d:"Горпенко К.Д., Корноухова Д.Д. · ауд. 402"},
-    {t:"10:40–12:10", w:"МПГУ – не только учёба", d:"Гульянц С.С. · ауд. 402"},
-    {t:"12:40–14:10", w:"Геометрия", d:"лекция · Никифорова А.В. · ауд. 401"},
-    {t:"14:20–15:50", w:"Математический анализ", d:"лекция · Матвеев Е.М. · ауд. 401"},
+    {t:"10:40–12:10", w:"МПГУ – не только учёба", d:"Гульянц С.С., представители УВР · ауд. 402"},
+    {t:"12:40–14:10", w:"Геометрия", d:"лекция · доц. Никифорова А.В. · ауд. 401"},
+    {t:"14:20–15:50", w:"Математический анализ", d:"лекция · проф. Матвеев Е.М. · ауд. 401"},
   ],
   "2026-09-03": [
-    {t:"09:00–10:30", w:"Знакомство с цифровой образоват. средой МПГУ", d:"лекция · Маняхина В.Г. · ауд. 301"},
-    {t:"10:40–12:10", w:"История России", d:"лекция · Филина Е.И. · ауд. 402"},
-    {t:"12:40–14:10", w:"Алгебра", d:"лекция · Михайлова М.В. · ауд. 401"},
-    {t:"14:20–15:50", w:"Цифровая образоват. среда МПГУ (практикум)", d:"по подгруппам · ауд. 209/208/210"},
+    {t:"09:00–10:30", w:"Знакомство с цифровой образоват. средой МПГУ", d:"лекция · доц. Маняхина В.Г. · ауд. 301"},
+    {t:"10:40–12:10", w:"История России", d:"лекция · доц. Филина Е.И. · ауд. 402"},
+    {t:"12:40–14:10", w:"Алгебра", d:"лекция · проф. Михайлова М.В. · ауд. 401"},
   ],
   "2026-09-04": [
-    {t:"10:40–12:10", w:"Учимся учиться", d:"Чуйкова Н.В. · ауд. 401"},
-    {t:"12:40–14:10", w:"Основы российской государственности", d:"лекция · Максимова Л.Н. · ауд. 402"},
-    {t:"14:20–15:50", w:"Основы российской государственности", d:"лекция · Максимова Л.Н. · ауд. 402"},
-    {t:"16:00–17:30", w:"Цифровая образоват. среда МПГУ (практикум)", d:"по подгруппам · ауд. 210/108/211"},
+    {t:"10:40–12:10", w:"Учимся учиться", d:"доц. Чуйкова Н.В. · ауд. 401"},
+    {t:"12:40–14:10", w:"Основы российской государственности", d:"лекция · доц. Максимова Л.Н. · ауд. 402"},
+    {t:"14:20–15:50", w:"Основы российской государственности", d:"лекция · доц. Максимова Л.Н. · ауд. 402"},
+    {t:"16:00–17:30", w:"Цифровая образоват. среда МПГУ (лаб)", d:"3 подгруппа · Овчарова П.С. · ауд. 211"},
   ],
   "2026-09-05": [
-    {t:"09:00–15:50", w:"Встречи с кураторами-студентами", d:"весь день, день кураторов"},
+    {t:"09:00–15:50", w:"Встречи с кураторами-студентами", d:"весь день · День кураторов"},
   ],
+  "2026-09-06": [],
   "2026-09-07": [
-    {t:"09:00–10:30", w:"Алгебра", d:"практика · Артемов Д.Ю. · ауд. 407"},
-    {t:"10:40–12:10", w:"Геометрия", d:"лекция · Никифорова А.В. · ауд. 301"},
-    {t:"12:40–14:10", w:"Алгебра", d:"практика · Артемов Д.Ю. · ауд. 407"},
-    {t:"14:20–15:50", w:"Тренинг по военно-спортивной подготовке", d:"пр-кт Вернадского, 88, спортзал"},
+    {t:"10:40–12:10", w:"Геометрия", d:"лекция · доц. Никифорова А.В. · ауд. 301"},
+    {t:"12:40–14:10", w:"Алгебра", d:"практика · ассист. Артемов Д.Ю. · ауд. 407"},
+    {t:"14:20–15:50", w:"Тренинг по военно-спортивной подготовке", d:"пр-кт Вернадского, дом 88, спорт. зал"},
   ],
   "2026-09-08": [
-    {t:"09:00–10:30", w:"Иностранный язык", d:"практика · Кашпарова В.С. · ауд. 405"},
-    {t:"10:40–12:10", w:"Геометрия", d:"лекция · Никифорова А.В. · ауд. 301"},
-    {t:"12:40–14:10", w:"Иностранный язык", d:"практика · Кашпарова В.С. · ауд. 405"},
-    {t:"14:20–15:50", w:"Основы российской государственности", d:"практика · Куанова И.Б. · ауд. 305"},
+    {t:"09:00–10:30", w:"Иностранный язык", d:"практика · доц. Кашпарова В.С. · ауд. 405"},
+    {t:"10:40–12:10", w:"Геометрия", d:"практика · доц. Никифорова А.В. · ауд. 207"},
   ],
   "2026-09-09": [
-    {t:"09:00–10:30", w:"Геометрия", d:"практика · Никифорова А.В. · ауд. 206"},
-    {t:"10:40–12:10", w:"История России", d:"лекция · Филина Е.И. · ауд. 402"},
-    {t:"12:40–14:10", w:"Геометрия", d:"практика · Никифорова А.В. · ауд. 207"},
-    {t:"14:20–15:50", w:"Тренинг по военно-спортивной подготовке", d:"пр-кт Вернадского, 88, спортзал"},
+    {t:"09:00–10:30", w:"Геометрия", d:"лекция · доц. Никифорова А.В. · ауд. 301"},
+    {t:"10:40–12:10", w:"История России", d:"лекция · доц. Филина Е.И. · ауд. 402"},
+    {t:"14:20–15:50", w:"Тренинг по военно-спортивной подготовке", d:"пр-кт Вернадского, дом 88, спорт. зал"},
   ],
   "2026-09-10": [
-    {t:"09:00–10:30", w:"Математический анализ", d:"лекция · Матвеев Е.М. · ауд. 401"},
+    {t:"09:00–10:30", w:"Математический анализ", d:"лекция · проф. Матвеев Е.М. · ауд. 401"},
     {t:"10:40–12:10", w:"Знакомство с деканатом и его функциями", d:"Машкина А.В. · ауд. 301"},
-    {t:"12:40–14:10", w:"Алгебра", d:"лекция · Михайлова М.В. · ауд. 401"},
+    {t:"12:40–14:10", w:"Алгебра", d:"лекция · проф. Михайлова М.В. · ауд. 401"},
   ],
   "2026-09-11": [
-    {t:"10:40–12:10", w:"Математический анализ", d:"практика · Морозенкова М.С. · ауд. 207"},
-    {t:"12:40–14:10", w:"Основы российской государственности", d:"практика · Куанова И.Б. · ауд. 407"},
-    {t:"14:20–15:50", w:"Речевые практики", d:"практика · Редькина Д.И. · ауд. 405"},
+    {t:"10:40–12:10", w:"Математический анализ", d:"практика · ассист. Морозенкова М.С. · ауд. 207"},
+    {t:"12:40–14:10", w:"Основы российской государственности", d:"практика · ассист. Куанова И.Б. · ауд. 407"},
+    {t:"14:20–15:50", w:"Речевые практики", d:"практика · ассист. Редькина Д.И. · ауд. 405"},
   ],
   "2026-09-12": [
-    {t:"весь день", w:"Самостоятельные и групповые прогулки", d:"день здоровья — пар нет"},
+    {t:"09:00–15:50", w:"Самостоятельные и групповые прогулки", d:"весь день · День здоровья"},
   ],
   "2026-09-13": [],
 };
@@ -763,10 +919,10 @@ const dateList = [
 
 const weekdayNames = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
 
-// Расписание Ани в объекте anya{} задано по дню недели (для повторения на
-// каждой неделе), но реально известно только на 1–6 сентября. С 7 сентября
-// достоверных данных нет — не подставляем их как факт.
-const ANYA_SCHEDULE_KNOWN_UNTIL = "2026-09-06";
+// Расписание Ани известно на весь показанный период: 1–6 сентября —
+// по anyaWeek1, 7–13 сентября — по anyaWeek2 (другая неделя чередования).
+const ANYA_SCHEDULE_KNOWN_UNTIL = "2026-09-13";
+const ANYA_WEEK_SWITCH = "2026-09-07";
 
 // Cache DOM lookups once instead of re-querying on every render/update.
 const dom = {
@@ -781,7 +937,7 @@ const dom = {
   meetNote: document.getElementById('meetNote'),
   menuList: document.getElementById('menuList'),
   menuIndicator: document.getElementById('menuIndicator'),
-  themeToggle: document.getElementById('themeToggle'),
+  themeSwitcher: document.getElementById('themeSwitcher'),
   sheetScrim: document.getElementById('sheetScrim'),
   sheet: document.getElementById('detailSheet'),
   sheetGrabber: document.getElementById('sheetGrabber'),
@@ -836,9 +992,13 @@ function buildRail(){
     pill.dataset.iso = iso;
     pill.setAttribute('role','tab');
     pill.setAttribute('aria-selected', iso===currentDate ? 'true':'false');
+    pill.tabIndex = iso===currentDate ? 0 : -1;
     pill.title = iso===TODAY ? `${label} — сегодня` : label;
     pill.innerHTML = `<b>${label}</b>${wd}`;
     pill.onclick = ()=>{ if(iso!==currentDate){ currentDate = iso; goToDate(); } };
+    pill.onkeydown = (e)=>{
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); pill.click(); }
+    };
     frag.appendChild(pill);
   });
   dom.rail.innerHTML = "";
@@ -852,10 +1012,12 @@ function replayAnim(el){
 }
 
 function updateActivePill(){
+  const focusWasInRail = dom.rail.contains(document.activeElement);
   dom.rail.querySelectorAll('.date-pill').forEach(p=>{
     const isActive = p.dataset.iso === currentDate;
     p.classList.toggle('active', isActive);
     p.setAttribute('aria-selected', isActive ? 'true':'false');
+    p.tabIndex = isActive ? 0 : -1;
   });
   const activePill = dom.rail.querySelector('.date-pill.active');
   if(activePill){
@@ -864,6 +1026,10 @@ function updateActivePill(){
     void activePill.offsetWidth;
     activePill.classList.add('pop');
     activePill.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+    // Keep keyboard focus on the rail following the selection (roving
+    // tabindex pattern) instead of leaving it stranded on a now
+    // unfocusable pill when navigation was driven by the arrow keys.
+    if(focusWasInRail) activePill.focus({preventScroll:true});
   }
   dom.todayBtn.classList.toggle('show', currentDate !== TODAY);
 }
@@ -929,6 +1095,7 @@ function renderSlots(container, items, emptyText, person){
     }
     return `
       <div class="${cls}" style="--i:${i}" onclick="openSlot('${person}', ${i})"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openSlot('${person}', ${i});}"
            tabindex="0" role="button" aria-haspopup="dialog">
         <div class="time">${it.t}</div>
         <div class="what"><b>${it.w}</b><span>${it.d}</span></div>
@@ -947,11 +1114,11 @@ function render(){
   renderSlots(dom.andreySlots, aItems, "Пар нет — весь день свободен", 'andrey');
   dom.andreyFree.textContent = freeTagText(aItems, "весь день", "занят весь день");
 
-  // Расписание Ани подтверждено только на первую неделю (1–6 сент).
-  // С 7 сентября оно ещё не опубликовано, поэтому вместо повтора недельного
-  // шаблона (это было бы просто догадкой) показываем его как неизвестное.
+  // Расписание Ани подтверждено на весь период 1–13 сентября, но
+  // чередуется по неделям — выбираем нужный объект по дате.
   const anyaKnown = currentDate <= ANYA_SCHEDULE_KNOWN_UNTIL;
-  const anItems = anyaKnown ? (anya[wIdx] || []) : [];
+  const anyaSchedule = currentDate < ANYA_WEEK_SWITCH ? anyaWeek1 : anyaWeek2;
+  const anItems = anyaKnown ? (anyaSchedule[wIdx] || []) : [];
   dayItems.anya = anItems;
   renderSlots(dom.anyaSlots, anItems, anyaKnown ? "Пар нет — весь день свободна" : "Расписание пока не опубликовано", 'anya');
   dom.anyaFree.textContent = anyaKnown ? freeTagText(anItems, "весь день", "занята весь день") : "неизвестно";
@@ -999,6 +1166,10 @@ const teacherFullNames = {
   "Зыков А.В.": "Зыков Алексей Владимирович",
   "Трифонов А.Ю.": "Трифонов Алексей Юрьевич",
   "Прокофьев А.А.": "Прокофьев Александр Александрович",
+  "Штергер М.В.": "Штергер Марина Владимировна",
+  "Арефьева О.Н.": "Арефьева Ольга Николаевна",
+  "Горбачева Е.П.": "Горбачева Елена Павловна",
+  "Корнеева М.В.": "Корнеева Мария Викторовна",
 };
 
 function openSlot(person, idx){
@@ -1384,7 +1555,7 @@ function durationText(dep, arr){
   let diff = (ah*60+am) - (dh*60+dm);
   if(diff < 0) diff += 24*60;
   const h = Math.floor(diff/60), m = diff%60;
-  return h>0 ? `${h} ч ${m ? m+' м':''}`.trim() : `${m} м`;
+  return h>0 ? `${h}ч${m ? ' '+m+'м' : ''}` : `${m}м`;
 }
 
 function renderMenu(){
@@ -1418,13 +1589,52 @@ function renderMenu(){
   }).join("");
 }
 
-function toggleTheme(){
-  const isBeige = document.body.classList.toggle('theme-beige');
-  dom.themeToggle.textContent = isBeige ? 'Тёмная тема' : 'Бежевая тема';
-  dom.themeToggle.setAttribute('aria-pressed', String(isBeige));
+const THEME_KEY = 'schedule-theme-andrey-anya';
+const THEMES = [
+  {id:'mocha',      name:'Мокко',      bg:'#1a1512', a:'#d3a86a', b:'#d1657b'},
+  {id:'terracotta', name:'Терракота', bg:'#f1e3d0', a:'#6b5a3a', b:'#a34b2b'},
+];
+
+function currentThemeId(){
+  return document.documentElement.getAttribute('data-theme') || 'mocha';
+}
+
+function applyTheme(id, persist){
+  document.documentElement.setAttribute('data-theme', id);
+  if(persist){
+    try{ localStorage.setItem(THEME_KEY, id); }catch(e){}
+  }
+  dom.themeSwitcher.querySelectorAll('.theme-swatch').forEach(el=>{
+    const isActive = el.dataset.theme === id;
+    el.classList.toggle('active', isActive);
+    el.setAttribute('aria-pressed', String(isActive));
+  });
+  const meta = document.getElementById('themeColorMeta');
+  const theme = THEMES.find(t=>t.id===id);
+  if(meta && theme) meta.setAttribute('content', theme.bg);
+}
+
+function buildThemeSwitcher(){
+  const frag = document.createDocumentFragment();
+  THEMES.forEach(t=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'theme-swatch';
+    btn.dataset.theme = t.id;
+    btn.title = t.name;
+    btn.setAttribute('aria-label', t.name);
+    btn.setAttribute('aria-pressed', 'false');
+    btn.style.background = `linear-gradient(135deg, ${t.bg} 40%, ${t.a} 70%, ${t.b} 100%)`;
+    btn.onclick = ()=> applyTheme(t.id, true);
+    frag.appendChild(btn);
+  });
+  dom.themeSwitcher.innerHTML = '';
+  dom.themeSwitcher.appendChild(frag);
+  applyTheme(currentThemeId(), false);
 }
 
 function initBoard(){
+  buildThemeSwitcher();
   buildRail();
   render();
   renderMenu();
