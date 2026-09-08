@@ -2,24 +2,29 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" id="themeColorMeta" content="#1a1512">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <script>
-// Применяем сохранённую тему как можно раньше — до отрисовки, чтобы не
-// было вспышки дефолтной темы при перезаходе на сайт.
+// Применяем сохранённую тему как можно раньше — до отрисовки, чтобы не было
+// вспышки дефолтной темы (и цвета строки браузера, который ей не соответствует)
+// при перезаходе на сайт.
 (function(){
   try{
     var saved = localStorage.getItem('schedule-theme-andrey-anya');
-    if(saved){
-      document.documentElement.setAttribute('data-theme', saved);
-    } else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches){
-      // No explicit choice yet — follow the system scheme by default
-      // (light → terracotta) instead of always opening in dark mocha.
-      document.documentElement.setAttribute('data-theme', 'terracotta');
+    var resolved = saved || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)
+      // Без сохранённого выбора раньше всегда стартовала тёмная "Мокко".
+      // Теперь, если у пользователя в системе включена светлая тема,
+      // по умолчанию показываем светлую "Терракоту".
+      ? 'terracotta' : null);
+    if(resolved){
+      document.documentElement.setAttribute('data-theme', resolved);
     }
+    var meta = document.getElementById('themeColorMeta');
+    if(meta) meta.setAttribute('content', resolved === 'terracotta' ? '#f1e3d0' : '#1a1512');
   }catch(e){}
 })();
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#1a1512" id="themeColorMeta">
 <title>Табло — Андрей и Аня</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,6 +50,12 @@
     --free: #8fbf7a;
     --shadow: 0 10px 30px -12px rgba(0,0,0,0.6);
     --ease: cubic-bezier(.22,1,.36,1);
+    /* Часто повторяющиеся пары transition. Подставляются через var() только
+       туда, где длительность совпадает 1-в-1 — ни один селектор не потерял
+       свой полный список transition-свойств, поведение не меняется, просто
+       меньше дублирования буквального текста "color .3s var(--ease)" по файлу. */
+    --t-color: color .3s var(--ease);
+    --t-bg: background-color .3s var(--ease);
   }
   /* Терракота — светлая, глина/хаки + терракотовый (в духе трендов 2026:
      Universal Khaki, terracotta & clay). */
@@ -65,24 +76,21 @@
     --free: #516839;
     --shadow: 0 10px 26px -14px rgba(90,55,20,0.25);
   }
-  *{box-sizing:border-box;}
+  *{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
   body{
     margin:0;
     background: var(--bg);
     color: var(--text);
     font-family: 'Manrope', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    padding: 28px 16px 60px;
+    padding: max(28px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(60px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     -webkit-font-smoothing: antialiased;
-    transition: background-color .4s var(--ease), color .3s var(--ease);
+    -webkit-text-size-adjust: 100%;
+    transition: background-color .4s var(--ease), var(--t-color);
   }
   .wrap{max-width: 800px; margin: 0 auto;}
-
-  /* Раньше здесь было общее правило transition с !important на несколько
-     селекторов сразу. В CSS !important заменяет ВЕСЬ список transition-свойств
-     целиком, а не объединяется с локальными правилами — из-за этого подъём
-     карточек при hover, пульсация активной даты и подсветка "текущей пары"
-     переставали анимироваться. Теперь каждый селектор ниже сам перечисляет
-     полный список нужных ему transition-свойств (цвета темы + свои эффекты). */
 
   @keyframes dropIn{
     from{ opacity:0; transform: translateY(-10px); }
@@ -100,6 +108,10 @@
     0%{ transform: scale(.90); }
     55%{ transform: scale(1.06); }
     100%{ transform: scale(1); }
+  }
+  @keyframes fadePulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:.45; }
   }
   .drop-in{
     opacity:0;
@@ -173,12 +185,14 @@
     border: 2px solid var(--line);
     padding: 0;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
     background: var(--panel-2);
     background-clip: padding-box;
     transition: border-color .25s var(--ease), transform .15s var(--ease), box-shadow .25s var(--ease);
   }
-  /* Same invisible hit-area bump as the menu tabs: keeps the 26px swatch
-     visually small while giving it a 44px tap target. */
+  /* Невидимая расширенная зона нажатия: свотч визуально маленький (26px),
+     но касание отвечает на 44px минимум (WCAG 2.5.8 / Apple HIG / Material). */
   .theme-swatch::after{
     content:"";
     position:absolute;
@@ -205,6 +219,7 @@
   }
   .date-rail::-webkit-scrollbar{ display:none; }
   .date-pill{
+    position:relative;
     flex: 0 0 auto;
     background: var(--panel);
     border: 1px solid var(--line);
@@ -213,11 +228,15 @@
     padding: 9px 13px;
     border-radius: 10px;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     text-align:center;
     line-height:1.3;
     transition: border-color .25s var(--ease), color .25s var(--ease), transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .25s var(--ease), background-color .25s var(--ease);
   }
-  .date-pill:hover{ transform: translateY(-3px); border-color: var(--andrey-dim); }
+  .date-pill:hover{ transform: translateY(-3px); border-color: var(--andrey-dim); will-change: transform; }
   .date-pill:active{ transform: translateY(0) scale(.96); }
   .date-pill b{display:block; font-size:15.5px; color: var(--text); font-weight:700; transition: color .25s var(--ease);}
   .date-pill.active{
@@ -246,7 +265,9 @@
     margin: 0;
     letter-spacing: 1.5px;
     text-transform: uppercase;
+    transition: var(--t-color), opacity .22s var(--ease);
   }
+  .day-title.swapping{ opacity: 0; }
   .today-btn{
     position:absolute;
     right:0;
@@ -260,6 +281,10 @@
     font-weight:700;
     letter-spacing: .3px;
     cursor:pointer;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     opacity:0;
     pointer-events:none;
     transform: translateY(-50%) scale(.9);
@@ -282,11 +307,9 @@
     transform:translate(-50%,-50%);
   }
 
-  .date-pill{ position:relative; }
   /* Точка "сегодня": статичная точка (::after) + пульсирующее кольцо (::before).
      Кольцо анимируется только через transform/opacity — это чистый композитинг
-     (без перерисовки каждый кадр), в отличие от прежней анимации box-shadow,
-     которая к тому же была жёстко завязана на цвет тёмной темы. */
+     (без перерисовки каждый кадр), в отличие от прежней анимации box-shadow. */
   .date-pill.today::after{
     content:"";
     position:absolute;
@@ -295,7 +318,7 @@
     border-radius:50%;
     background: var(--anya);
     z-index:1;
-    transition: background-color .3s var(--ease);
+    transition: var(--t-bg);
   }
   .date-pill.today::before{
     content:"";
@@ -306,7 +329,7 @@
     background: var(--anya);
     animation: todayPulse 2.2s ease-out infinite;
     will-change: transform, opacity;
-    transition: background-color .3s var(--ease);
+    transition: var(--t-bg);
   }
   .date-pill.today.active::after,
   .date-pill.today.active::before{ background: var(--bg); }
@@ -337,11 +360,12 @@
     border-radius: 14px;
     overflow:hidden;
     box-shadow: var(--shadow);
-    transition: transform .35s var(--ease), box-shadow .35s var(--ease), background-color .35s var(--ease), border-color .35s var(--ease);
+    transition: background-color .35s var(--ease), border-color .35s var(--ease), transform .35s var(--ease), box-shadow .35s var(--ease);
   }
   .col:hover{
     transform: translateY(-3px);
     box-shadow: 0 16px 34px -14px rgba(0,0,0,0.5);
+    will-change: transform;
   }
   .col-head{
     padding: 13px 16px;
@@ -351,9 +375,7 @@
     justify-content:space-between;
     align-items:center;
     position:relative;
-  }
-  .col-head{
-    transition: color .3s var(--ease);
+    transition: var(--t-color);
   }
   .col-head::before{
     content:"";
@@ -377,12 +399,17 @@
     border-left: 3px solid transparent;
     font-size: 13px;
     display:flex;
+    align-items:flex-start;
     gap:10px;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     animation: slotIn .4s var(--ease) both;
     animation-delay: calc(var(--i, 0) * 0.045s);
     will-change: opacity, transform;
-    transition: background-color .3s var(--ease), border-left-color .3s var(--ease), padding-left .3s var(--ease);
+    transition: var(--t-bg), border-left-color .3s var(--ease), padding-left .3s var(--ease);
   }
   .slot:hover{ background: var(--panel-2); }
   .slot:last-child{border-bottom:none;}
@@ -392,31 +419,27 @@
     padding-left: 13px;
   }
   .slot.now .time{ color: var(--anya); }
-  .slot.now .time::after{
-    content: "сейчас";
+  .slot .time-left{
     display:block;
     margin-top:3px;
     font-size:9.5px;
     font-weight:700;
     letter-spacing:.5px;
-    text-transform:uppercase;
     color: var(--anya);
-    animation: fadePulse 1.8s ease-in-out infinite;
+    transition: var(--t-color);
   }
   .slot.past{ opacity:.5; }
-  @keyframes fadePulse{
-    0%,100%{ opacity:1; }
-    50%{ opacity:.45; }
-  }
+
   .slot .time{
     color: var(--text-dim);
     flex: 0 0 84px;
     font-size:12px;
     font-weight:600;
     padding-top:1px;
+    transition: var(--t-color);
   }
-  .slot .what b{display:block; color: var(--text); font-size:13px; font-weight:600;}
-  .slot .what span{color: var(--text-dim); font-size:12px;}
+  .slot .what b{display:block; color: var(--text); font-size:13px; font-weight:600; transition: var(--t-color);}
+  .slot .what span{color: var(--text-dim); font-size:12px; transition: var(--t-color);}
   .empty-day{
     padding: 26px 14px;
     text-align:center;
@@ -501,10 +524,9 @@
     -webkit-tap-highlight-color: transparent;
   }
   .menu-tab.active{ color: var(--bg); }
-  /* Invisible hit-area bump: the tab bar is compact (~32px tall visually),
-     under the 44px minimum that WCAG 2.5.8, Apple HIG and Material Design
-     all recommend for touch targets. Expanding via ::after keeps the tidy
-     visual height while widening what actually responds to a tap. */
+  /* Невидимая расширенная зона нажатия: панель вкладок компактная (~32px по
+     высоте), ниже 44px-минимума, который рекомендуют WCAG 2.5.8, Apple HIG
+     и Material Design. Расширяем через ::after, не трогая визуальную высоту. */
   .menu-tab::after{
     content:"";
     position:absolute;
@@ -582,13 +604,13 @@
   }
   .menu-row .alab.yes{ color: var(--free); }
   .menu-row .alab.no{ color: var(--text-dim); }
-  /* Detail sheet — opens when a class/pair is tapped. Not full-screen:
-     capped height, slides up from the bottom, easy to dismiss by tapping
-     the scrim, swiping down on the grabber, the close button, or Esc. */
+
   .sheet-scrim{
     position: fixed;
     inset: 0;
+    cursor: pointer;
     background: rgba(0,0,0,0.5);
+    -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
     opacity: 0;
     pointer-events: none;
@@ -603,6 +625,7 @@
     bottom: 0;
     width: min(92vw, 460px);
     max-height: 62vh;
+    max-height: 62dvh;
     transform: translate(-50%, 100%);
     background: var(--panel);
     border: 1px solid var(--line);
@@ -628,6 +651,8 @@
     margin: 4px auto 14px;
     cursor: grab;
     touch-action: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
   .sheet-close{
     position: absolute;
@@ -639,6 +664,8 @@
     color: var(--text-dim);
     font-size: 13px;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
     transition: color .2s var(--ease), border-color .2s var(--ease), transform .15s var(--ease);
   }
   .sheet-close:hover{ color: var(--text); border-color: var(--andrey-dim); }
@@ -651,15 +678,30 @@
     height:max(44px, 100%);
     transform:translate(-50%,-50%);
   }
+  .sheet-header{
+    cursor: grab;
+    /* Не pan-y: заголовок не прокручиваемая область, и allow-панорамирование
+       иногда даёт браузеру забрать вертикальный жест под нативный скролл
+       раньше, чем до JS дойдут pointermove — из-за этого свайп-закрытие
+       мог не сработать с первого раза на touch-устройствах. none здесь
+       ведёт себя как на .sheet-grabber и отдаёт весь жест перетаскиванию. */
+    touch-action: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
   .sheet-body{
     max-height: calc(62vh - 60px);
+    max-height: calc(62dvh - 60px);
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     touch-action: pan-y;
   }
   .sheet-time{
     font-size: 13px;
     font-weight: 700;
     letter-spacing: .5px;
+    transition: var(--t-color);
   }
   .sheet-title{
     margin: 6px 0 14px;
@@ -679,6 +721,7 @@
     font-size: 14px;
     color: var(--text-dim);
     line-height: 1.4;
+    transition: var(--t-color);
   }
   .sheet-meta span::before{
     content: "";
@@ -687,13 +730,13 @@
     width: 6px; height: 6px;
     border-radius: 50%;
     background: var(--text-dim);
-    transition: background-color .3s var(--ease);
+    transition: var(--t-bg);
   }
 
-  /* Visible keyboard focus (WCAG 2.4.7 / 2.4.11) for every interactive
-     element on the board — date pills, class/train rows, tabs, and
-     buttons all only responded to pointer input before this. Scoped to
-     :focus-visible so mouse/touch users don't see a ring on click. */
+  /* Видимый фокус клавиатуры (WCAG 2.4.7 / 2.4.11) для всех интерактивных
+     элементов табло — раньше даты, пары, вкладки и кнопки откликались
+     только на указатель. Ограничено :focus-visible, чтобы у мыши/тача
+     не появлялось кольцо на обычный клик. */
   .date-pill:focus-visible,
   .slot:focus-visible,
   .menu-tab:focus-visible,
@@ -704,6 +747,17 @@
     outline-offset: 2px;
   }
   .theme-swatch:focus-visible{ outline-offset: 3px; }
+
+  @media print{
+    /* Расписание логично распечатать: убираем декоративную анимацию,
+       фон и интерактивные элементы, а также меню электричек — оставляем
+       только сами пары. */
+    body{ background:#fff !important; color:#000 !important; padding:0; }
+    .theme-switcher, .today-btn, .sheet-scrim, .detail-sheet, .menu-board{ display:none !important; }
+    .date-rail{ overflow:visible; flex-wrap:wrap; }
+    .col{ box-shadow:none; border:1px solid #999; break-inside: avoid; }
+    .slot{ animation:none !important; opacity:1 !important; }
+  }
 
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
@@ -725,7 +779,7 @@
     <div class="date-rail" id="dateRail" role="tablist" aria-label="Выбор дня"></div>
     <div class="day-title-row">
       <div class="day-title" id="dayTitle" aria-live="polite"></div>
-      <button class="today-btn" id="todayBtn" onclick="jumpToToday()" title="Вернуться к сегодняшнему дню">Сегодня</button>
+      <button class="today-btn" id="todayBtn" onclick="jumpToToday()" title="Вернуться к сегодняшнему дню" tabindex="-1" aria-hidden="true">Сегодня</button>
     </div>
   </div>
 
@@ -759,12 +813,14 @@
 </div>
 
 <div class="sheet-scrim" id="sheetScrim" onclick="closeSheet()"></div>
-<div class="detail-sheet" id="detailSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" aria-hidden="true">
+<div class="detail-sheet" id="detailSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" aria-hidden="true" inert>
   <div class="sheet-grabber" id="sheetGrabber" aria-hidden="true"></div>
   <button class="sheet-close" onclick="closeSheet()" aria-label="Закрыть">✕</button>
-  <div class="sheet-body">
+  <div class="sheet-header" id="sheetHeader">
     <div class="sheet-time" id="sheetTime"></div>
     <h3 class="sheet-title" id="sheetTitle"></h3>
+  </div>
+  <div class="sheet-body">
     <div class="sheet-meta" id="sheetMeta"></div>
   </div>
 </div>
@@ -841,8 +897,8 @@ const anyaWeek2 = {
 };
 
 // Расписание Андрея — группа 107 (ВОМ23-ММИ2607), 3-я подгруппа.
-// Скопировано из проверенного расписания (index.html); для пар, которые
-// идут по подгруппам, выбран вариант 3-й подгруппы.
+// Скопировано из проверенного расписания групп (index.html); для пар,
+// которые идут по подгруппам, выбран вариант 3-й подгруппы.
 const andrey = {
   "2026-09-01": [
     {t:"09:00–10:30", w:"Первый раз на первый курс", d:"ассист. Тихонов С.О. · ауд. 301"},
@@ -874,14 +930,13 @@ const andrey = {
   "2026-09-07": [
     {t:"10:40–12:10", w:"Геометрия", d:"лекция · доц. Никифорова А.В. · ауд. 301"},
     {t:"12:40–14:10", w:"Алгебра", d:"практика · ассист. Артемов Д.Ю. · ауд. 407"},
-    {t:"14:20–15:50", w:"Тренинг по военно-спортивной подготовке", d:"пр-кт Вернадского, дом 88, спорт. зал"},
   ],
   "2026-09-08": [
     {t:"09:00–10:30", w:"Иностранный язык", d:"практика · доц. Кашпарова В.С. · ауд. 405"},
-    {t:"10:40–12:10", w:"Геометрия", d:"практика · доц. Никифорова А.В. · ауд. 207"},
+    {t:"10:40–12:10", w:"Геометрия", d:"лекция · доц. Никифорова А.В. · ауд. 301"},
   ],
   "2026-09-09": [
-    {t:"09:00–10:30", w:"Геометрия", d:"лекция · доц. Никифорова А.В. · ауд. 301"},
+    {t:"09:00–10:30", w:"Геометрия", d:"практика · доц. Никифорова А.В. · ауд. 206"},
     {t:"10:40–12:10", w:"История России", d:"лекция · доц. Филина Е.И. · ауд. 402"},
     {t:"14:20–15:50", w:"Тренинг по военно-спортивной подготовке", d:"пр-кт Вернадского, дом 88, спорт. зал"},
   ],
@@ -901,21 +956,33 @@ const andrey = {
   "2026-09-13": [],
 };
 
-const dateList = [
-  ["2026-09-01","1 сент","Вт"],
-  ["2026-09-02","2 сент","Ср"],
-  ["2026-09-03","3 сент","Чт"],
-  ["2026-09-04","4 сент","Пт"],
-  ["2026-09-05","5 сент","Сб"],
-  ["2026-09-06","6 сент","Вс"],
-  ["2026-09-07","7 сент","Пн"],
-  ["2026-09-08","8 сент","Вт"],
-  ["2026-09-09","9 сент","Ср"],
-  ["2026-09-10","10 сент","Чт"],
-  ["2026-09-11","11 сент","Пт"],
-  ["2026-09-12","12 сент","Сб"],
-  ["2026-09-13","13 сент","Вс"],
-];
+// Список дат больше не хранится вручную. Строится из даты начала и
+// количества дней (как в проверенном расписании групп), день недели
+// всегда считается из iso — единый источник правды вместо ручных подписей,
+// которые могли разойтись при редактировании.
+const SCHEDULE_START = "2026-09-01";
+const SCHEDULE_DAYS = 13;
+const MONTH_SHORT_RU = ["янв","февр","мар","апр","мая","июня","июля","авг","сент","окт","нояб","дек"];
+
+function isoPlusDays(iso, n){
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+const dateList = Array.from({length: SCHEDULE_DAYS}, (_, i) => {
+  const iso = isoPlusDays(SCHEDULE_START, i);
+  const d = new Date(iso + "T00:00:00");
+  return [iso, `${d.getDate()} ${MONTH_SHORT_RU[d.getMonth()]}`];
+});
+
+// Даты, у которых на весь день стоит мероприятие у Андрея (не обычная
+// выходная суббота) — им не нужно приглушение через класс .off, чтобы не
+// выглядело так, будто в этот день вообще ничего нет.
+const allDayEventDates = new Set(["2026-09-05","2026-09-12"]);
 
 const weekdayNames = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
 
@@ -924,7 +991,6 @@ const weekdayNames = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
 const ANYA_SCHEDULE_KNOWN_UNTIL = "2026-09-13";
 const ANYA_WEEK_SWITCH = "2026-09-07";
 
-// Cache DOM lookups once instead of re-querying on every render/update.
 const dom = {
   rail: document.getElementById('dateRail'),
   dayTitle: document.getElementById('dayTitle'),
@@ -941,21 +1007,28 @@ const dom = {
   sheetScrim: document.getElementById('sheetScrim'),
   sheet: document.getElementById('detailSheet'),
   sheetGrabber: document.getElementById('sheetGrabber'),
+  sheetHeader: document.getElementById('sheetHeader'),
   sheetTime: document.getElementById('sheetTime'),
   sheetTitle: document.getElementById('sheetTitle'),
   sheetMeta: document.getElementById('sheetMeta'),
 };
 
-function todayISO(){
-  const d = new Date();
-  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
-const TODAY = todayISO();
+// Пары идут в Москве, поэтому "сегодня" и "сейчас" считаем по московскому
+// времени через Intl.DateTimeFormat, а не по new Date() в локальном времени
+// устройства — иначе при открытии страницы в другом часовом поясе "сегодня"
+// и подсветка текущей пары могли бы указать не на тот день/пару.
+const MOSCOW_TZ = 'Europe/Moscow';
 
-// Open on today's date automatically; if today falls outside the printed
-// range, fall back to the nearest edge (first date before it starts, last
-// date once it's over) instead of always showing day one.
+function todayISO(){
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: MOSCOW_TZ, year:'numeric', month:'2-digit', day:'2-digit'
+  }).formatToParts(new Date());
+  const map = {};
+  parts.forEach(p=>{ map[p.type] = p.value; });
+  return `${map.year}-${map.month}-${map.day}`;
+}
+let TODAY = todayISO();
+
 function pickInitialDate(){
   if(dateList.some(([iso])=>iso===TODAY)) return TODAY;
   if(TODAY < dateList[0][0]) return dateList[0][0];
@@ -968,26 +1041,37 @@ function weekdayIndex(dateStr){
   return d.getDay();
 }
 
+function firstStart(items){
+  if(!items || items.length===0) return null;
+  const first = items[0];
+  const parts = first.t.split(/[-–—]/);
+  return parts.length===2 ? parts[0].trim() : null;
+}
+
 function lastEnd(items){
   if(!items || items.length===0) return null;
   const last = items[items.length-1];
-  const parts = last.t.split("–");
+  const parts = last.t.split(/[-–—]/);
   return parts.length===2 ? parts[1].trim() : null;
 }
 
-function freeTagText(items, allDayFreeText, busyAllDayText){
-  if(items.length===0) return allDayFreeText;
+function freeWindowsText(items){
+  if(items.length===0) return "весь день";
+  const start = firstStart(items);
   const end = lastEnd(items);
-  return end ? `до ${end}` : busyAllDayText;
+  if(!start || !end) return null;
+  return `с ${start} до ${end}`;
 }
 
 function buildRail(){
   const frag = document.createDocumentFragment();
-  dateList.forEach(([iso,label,wd])=>{
+  dateList.forEach(([iso,label])=>{
+    const wd = weekdayNames[weekdayIndex(iso)];
     const pill = document.createElement('div');
+    const isWeekendOff = (wd==="Сб"||wd==="Вс") && !allDayEventDates.has(iso);
     pill.className = 'date-pill'
       + (iso===currentDate ? ' active':'')
-      + ((wd==="Сб"||wd==="Вс")?' off':'')
+      + (isWeekendOff ? ' off':'')
       + (iso===TODAY ? ' today':'');
     pill.dataset.iso = iso;
     pill.setAttribute('role','tab');
@@ -995,9 +1079,10 @@ function buildRail(){
     pill.tabIndex = iso===currentDate ? 0 : -1;
     pill.title = iso===TODAY ? `${label} — сегодня` : label;
     pill.innerHTML = `<b>${label}</b>${wd}`;
-    pill.onclick = ()=>{ if(iso!==currentDate){ currentDate = iso; goToDate(); } };
+    const select = ()=>{ if(iso!==currentDate){ currentDate = iso; goToDate(); } };
+    pill.onclick = select;
     pill.onkeydown = (e)=>{
-      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); pill.click(); }
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); select(); }
     };
     frag.appendChild(pill);
   });
@@ -1026,21 +1111,28 @@ function updateActivePill(){
     void activePill.offsetWidth;
     activePill.classList.add('pop');
     activePill.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
-    // Keep keyboard focus on the rail following the selection (roving
-    // tabindex pattern) instead of leaving it stranded on a now
-    // unfocusable pill when navigation was driven by the arrow keys.
+    // Держим клавиатурный фокус на ленте после выбора (roving tabindex),
+    // а не оставляем его на теперь нефокусируемой карточке, если
+    // навигация шла со стрелок.
     if(focusWasInRail) activePill.focus({preventScroll:true});
   }
-  dom.todayBtn.classList.toggle('show', currentDate !== TODAY);
+  const showTodayBtn = currentDate !== TODAY;
+  dom.todayBtn.classList.toggle('show', showTodayBtn);
+  dom.todayBtn.tabIndex = showTodayBtn ? 0 : -1;
+  dom.todayBtn.setAttribute('aria-hidden', String(!showTodayBtn));
 }
 
 function goToDate(){
   updateActivePill();
   dom.daySwap.classList.add('swapping');
+  dom.dayTitle.classList.add('swapping');
   window.setTimeout(()=>{
     render();
-    requestAnimationFrame(()=>{ dom.daySwap.classList.remove('swapping'); });
-  }, 220);
+    requestAnimationFrame(()=>{
+      dom.daySwap.classList.remove('swapping');
+      dom.dayTitle.classList.remove('swapping');
+    });
+  }, 260);
 }
 
 function jumpToToday(){
@@ -1051,10 +1143,9 @@ function jumpToToday(){
   }
 }
 
-// Left/right arrow keys move between days — handy once you're scrolled
-// away from the rail, and costs nothing for mouse/touch users.
 document.addEventListener('keydown', e=>{
   if(e.target && ['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  if(dom.sheet.classList.contains('open')) return;
   if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
   const idx = dateList.findIndex(d=>d[0]===currentDate);
   const next = idx + (e.key==='ArrowRight' ? 1 : -1);
@@ -1063,13 +1154,18 @@ document.addEventListener('keydown', e=>{
   goToDate();
 });
 
-// Minutes-since-midnight helper used to work out what's happening "now".
 function minutesNow(){
-  const d = new Date();
-  return d.getHours()*60 + d.getMinutes();
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: MOSCOW_TZ, hour:'2-digit', minute:'2-digit', hour12:false
+  }).formatToParts(new Date());
+  const map = {};
+  parts.forEach(p=>{ map[p.type] = p.value; });
+  const h = Number(map.hour) % 24; // на случай если движок форматирует полночь как "24:00"
+  return h*60 + Number(map.minute);
 }
+
 function parseRange(t){
-  const parts = t.split("–");
+  const parts = t.split(/[-–—]/);
   if(parts.length!==2) return null;
   const [sh,sm] = parts[0].split(":").map(Number);
   const [eh,em] = parts[1].split(":").map(Number);
@@ -1079,6 +1175,106 @@ function parseRange(t){
 
 let dayItems = { andrey: [], anya: [] };
 
+// Сокращения учёных степеней/должностей — разворачиваются в полный вид как
+// в коротком описании под парой (см. cleanShortDesc), так и в карточке
+// пары (см. expandMetaPart).
+const titlesMap = {
+  "ст. пр.": "старший преподаватель",
+  "доц.": "доцент",
+  "проф.": "профессор",
+  "ассист.": "ассистент"
+};
+
+// Полные ФИО части преподавателей — известны не для всех, поэтому в общем
+// расписании (data выше) оставлены исходные инициалы, а расшифровка
+// показывается только в карточке пары (см. openSlot). Список объединяет
+// преподавателей группы 107 (из проверенного расписания групп) и
+// преподавателей МИЭТ у Ани.
+const teacherFullNames = {
+  "Тихонов С.О.": "Тихонов Сергей Олегович",
+  "Курицына Т.В.": "Курицына Татьяна Владимировна",
+  "Никифорова А.В.": "Никифорова Анна Валентиновна",
+  "Матвеев Е.М.": "Матвеев Евгений Михайлович",
+  "Артемов Д.Ю.": "Артемов Даниил Юрьевич",
+  "Морозенкова М.С.": "Морозенкова Марина Сергеевна",
+  "Максимова Л.Н.": "Максимова Людмила Николаевна",
+  "Куанова И.Б.": "Куанова Инесса Бакытжановна",
+  "Филина Е.И.": "Филина Елена Ивановна",
+  "Кашпарова В.С.": "Кашпарова Валентина Сергеевна",
+  "Маняхина В.Г.": "Маняхина Валентина Геннадьевна",
+  "Иванова Н.Ю.": "Иванова Наталья Юрьевна",
+  "Овчарова П.С.": "Овчарова Полина Сергеевна",
+  "Чуйкова Н.В.": "Чуйкова Наталия Владимировна",
+  "Гульянц С.С.": "Гульянц Светлана Станиславовна",
+  "Михайлова М.В.": "Михайлова Марина Владимировна",
+  "Машкина А.В.": "Машкина Анастасия Владимировна",
+  "Редькина Д.И.": "Редькина Дарья Игоревна",
+  "Болашенко П.А.": "Болашенко Павел Аркадьевич",
+  "Кулешов А.Е.": "Кулешов Александр Евгеньевич",
+  "Погибельский А.П.": "Погибельский Александр Прохорович",
+  "Слюсарь М.В.": "Слюсарь Мария Владимировна",
+  "Пахомова Ю.Д.": "Пахомова Юлия Дмитриевна",
+  "Коночкин К.Н.": "Коночкин Константин Николаевич",
+  "Зыков А.В.": "Зыков Алексей Владимирович",
+  "Трифонов А.Ю.": "Трифонов Алексей Юрьевич",
+  "Прокофьев А.А.": "Прокофьев Александр Александрович",
+  "Штергер М.В.": "Штергер Марина Владимировна",
+  "Арефьева О.Н.": "Арефьева Ольга Николаевна",
+  "Горбачева Е.П.": "Горбачева Елена Павловна",
+  "Корнеева М.В.": "Корнеева Мария Викторовна",
+};
+
+function cleanShortDesc(str) {
+  if (!str) return '';
+  let cleaned = str;
+  Object.keys(titlesMap).forEach(shortTitle => {
+    const escaped = shortTitle.replace(/\./g, '\\.');
+    const regex = new RegExp('(?:^|\\s)' + escaped + '\\s*', 'g');
+    cleaned = cleaned.replace(regex, m => m.startsWith(' ') || m.startsWith('\u00A0') ? ' ' : '');
+  });
+  return cleaned.trim();
+}
+
+function expandMetaPart(part) {
+  let res = part.trim();
+  Object.entries(titlesMap).forEach(([shortTitle, fullTitle]) => {
+    const escaped = shortTitle.replace(/\./g, '\\.');
+    res = res.replace(new RegExp(escaped, 'g'), fullTitle);
+  });
+  Object.entries(teacherFullNames).forEach(([shortName, fullName]) => {
+    const escaped = shortName.replace(/\./g, '\\.');
+    res = res.replace(new RegExp(escaped, 'g'), fullName);
+  });
+  return res;
+}
+
+function formatLeft(mins){
+  const h = Math.floor(mins/60), m = mins%60;
+  return h>0 ? `${h}ч ${m}м` : `${m}м`;
+}
+
+// Считает индекс "текущей" и "следующей" пары для момента времени `now`
+// (в минутах от полуночи). Вынесено отдельно, чтобы использовать и при
+// полной отрисовке дня, и при лёгком ежеминутном обновлении без
+// пересоздания DOM-узлов.
+function computeLiveIndices(items, now){
+  let nowIdx = -1, nextIdx = -1, nextStart = Infinity;
+  for(let i=0;i<items.length;i++){
+    const range = parseRange(items[i].t);
+    if(range && now >= range[0] && now <= range[1]){ nowIdx = i; break; }
+  }
+  if(nowIdx === -1){
+    items.forEach((it,i)=>{
+      const range = parseRange(it.t);
+      if(range && range[0] > now && range[0] < nextStart){
+        nextStart = range[0];
+        nextIdx = i;
+      }
+    });
+  }
+  return {nowIdx, nextIdx};
+}
+
 function renderSlots(container, items, emptyText, person){
   if(items.length===0){
     container.innerHTML = `<div class="empty-day">${emptyText}</div>`;
@@ -1086,21 +1282,69 @@ function renderSlots(container, items, emptyText, person){
   }
   const isToday = currentDate === TODAY;
   const now = isToday ? minutesNow() : null;
+  const {nowIdx, nextIdx} = isToday ? computeLiveIndices(items, now) : {nowIdx:-1, nextIdx:-1};
+
   container.innerHTML = items.map((it,i)=>{
     const range = isToday ? parseRange(it.t) : null;
     let cls = "slot";
     if(range){
-      if(now >= range[0] && now <= range[1]) cls += " now";
+      if(i === nowIdx) cls += " now";
       else if(now > range[1]) cls += " past";
     }
+    let timeLeftHtml = '';
+    if(range && i === nowIdx){
+      const minutesLeft = range[1] - now;
+      timeLeftHtml = `<div class="time-left">${minutesLeft > 0 ? formatLeft(minutesLeft) : '<1м'}</div>`;
+    } else if(range && i === nextIdx){
+      const minutesUntil = range[0] - now;
+      timeLeftHtml = `<div class="time-left">${minutesUntil > 0 ? formatLeft(minutesUntil) : '<1м'}</div>`;
+    }
+    const ariaLabel = `${it.t}, ${it.w}`;
     return `
-      <div class="${cls}" style="--i:${i}" onclick="openSlot('${person}', ${i})"
-           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); openSlot('${person}', ${i});}"
-           tabindex="0" role="button" aria-haspopup="dialog">
-        <div class="time">${it.t}</div>
-        <div class="what"><b>${it.w}</b><span>${it.d}</span></div>
+      <div class="${cls}" style="--i:${i}" data-person="${person}" data-idx="${i}"
+           tabindex="0" role="button" aria-haspopup="dialog" aria-label="${ariaLabel}">
+        <div class="time">${it.t}${timeLeftHtml}</div>
+        <div class="what"><b>${it.w}</b><span>${cleanShortDesc(it.d)}</span></div>
       </div>`;
   }).join("");
+}
+
+// Ежеминутное обновление "сейчас/далее/прошло" БЕЗ пересоздания DOM-узлов —
+// иначе полная перерисовка списка каждую минуту заново запускала бы
+// анимацию появления пар (slotIn), создавая заметный глитч раз в 60 секунд.
+function refreshLiveIndicators(container, items){
+  if(currentDate !== TODAY || !items.length) return;
+  const now = minutesNow();
+  const {nowIdx, nextIdx} = computeLiveIndices(items, now);
+  container.querySelectorAll('.slot[data-idx]').forEach(el=>{
+    const i = Number(el.dataset.idx);
+    const range = parseRange(items[i].t);
+    el.classList.remove('now','past');
+    let timeLeftEl = el.querySelector('.time-left');
+    if(range && i === nowIdx){
+      el.classList.add('now');
+      const minutesLeft = range[1] - now;
+      const text = minutesLeft > 0 ? formatLeft(minutesLeft) : '<1м';
+      if(!timeLeftEl){
+        timeLeftEl = document.createElement('div');
+        timeLeftEl.className = 'time-left';
+        el.querySelector('.time').appendChild(timeLeftEl);
+      }
+      timeLeftEl.textContent = text;
+    } else if(range && i === nextIdx){
+      const minutesUntil = range[0] - now;
+      const text = minutesUntil > 0 ? formatLeft(minutesUntil) : '<1м';
+      if(!timeLeftEl){
+        timeLeftEl = document.createElement('div');
+        timeLeftEl.className = 'time-left';
+        el.querySelector('.time').appendChild(timeLeftEl);
+      }
+      timeLeftEl.textContent = text;
+    } else {
+      if(range && now > range[1]) el.classList.add('past');
+      if(timeLeftEl) timeLeftEl.remove();
+    }
+  });
 }
 
 function render(){
@@ -1112,7 +1356,7 @@ function render(){
   const aItems = andrey[currentDate] || [];
   dayItems.andrey = aItems;
   renderSlots(dom.andreySlots, aItems, "Пар нет — весь день свободен", 'andrey');
-  dom.andreyFree.textContent = freeTagText(aItems, "весь день", "занят весь день");
+  dom.andreyFree.textContent = freeWindowsText(aItems);
 
   // Расписание Ани подтверждено на весь период 1–13 сентября, но
   // чередуется по неделям — выбираем нужный объект по дате.
@@ -1121,7 +1365,7 @@ function render(){
   const anItems = anyaKnown ? (anyaSchedule[wIdx] || []) : [];
   dayItems.anya = anItems;
   renderSlots(dom.anyaSlots, anItems, anyaKnown ? "Пар нет — весь день свободна" : "Расписание пока не опубликовано", 'anya');
-  dom.anyaFree.textContent = anyaKnown ? freeTagText(anItems, "весь день", "занята весь день") : "неизвестно";
+  dom.anyaFree.textContent = anyaKnown ? freeWindowsText(anItems) : "неизвестно";
 
   const note = dom.meetNote;
   const bothFree = aItems.length===0 && anItems.length===0 && anyaKnown;
@@ -1138,39 +1382,32 @@ function render(){
   replayAnim(note);
 }
 
-// --- Detail sheet: tap a class to see it, dismiss it just as easily ---
-// (tap the scrim, tap ✕, press Esc, or swipe the sheet down).
 let lastFocused = null;
 
-// Полные ФИО части преподавателей — известны не для всех, поэтому в общем
-// расписании (data выше) оставлены исходные инициалы, а расшифровка
-// показывается только в карточке пары (см. openSlot).
-const teacherFullNames = {
-  "Никифорова А.В.": "Никифорова Анна Валентиновна",
-  "Матвеев Е.М.": "Матвеев Евгений Михайлович",
-  "Артемов Д.Ю.": "Артемов Даниил Юрьевич",
-  "Морозенкова М.С.": "Морозенкова Марина Сергеевна",
-  "Максимова Л.Н.": "Максимова Людмила Николаевна",
-  "Куанова И.Б.": "Куанова Инесса Бакытжановна",
-  "Филина Е.И.": "Филина Елена Ивановна",
-  "Кашпарова В.С.": "Кашпарова Валентина Сергеевна",
-  "Маняхина В.Г.": "Маняхина Валентина Геннадьевна",
-  "Чуйкова Н.В.": "Чуйкова Наталия Владимировна",
-  "Гульянц С.С.": "Гульянц Светлана Станиславовна",
-  "Болашенко П.А.": "Болашенко Павел Аркадьевич",
-  "Кулешов А.Е.": "Кулешов Александр Евгеньевич",
-  "Погибельский А.П.": "Погибельский Александр Прохорович",
-  "Слюсарь М.В.": "Слюсарь Мария Владимировна",
-  "Пахомова Ю.Д.": "Пахомова Юлия Дмитриевна",
-  "Коночкин К.Н.": "Коночкин Константин Николаевич",
-  "Зыков А.В.": "Зыков Алексей Владимирович",
-  "Трифонов А.Ю.": "Трифонов Алексей Юрьевич",
-  "Прокофьев А.А.": "Прокофьев Александр Александрович",
-  "Штергер М.В.": "Штергер Марина Владимировна",
-  "Арефьева О.Н.": "Арефьева Ольга Николаевна",
-  "Горбачева Е.П.": "Горбачева Елена Павловна",
-  "Корнеева М.В.": "Корнеева Мария Викторовна",
-};
+// iOS Safari отдельная история: обычный body{overflow:hidden} не мешает
+// фону скроллиться/резиниться под модалкой, потому что там жест скролла не
+// проходит через overflow страницы. Рабочий обход — на время открытия
+// зафиксировать body через position:fixed с отрицательным top, а при
+// закрытии вернуть прежнюю прокрутку.
+let lockedScrollY = 0;
+function lockBodyScroll(){
+  lockedScrollY = window.scrollY || window.pageYOffset || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${lockedScrollY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
+  document.body.style.overflow = 'hidden';
+}
+function unlockBodyScroll(){
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  document.body.style.overflow = '';
+  window.scrollTo(0, lockedScrollY);
+}
 
 function openSlot(person, idx){
   const it = dayItems[person] && dayItems[person][idx];
@@ -1181,16 +1418,15 @@ function openSlot(person, idx){
   dom.sheet.classList.add(person);
   dom.sheetTime.textContent = it.t;
   dom.sheetTitle.textContent = it.w;
-  dom.sheetMeta.innerHTML = it.d.split("·").map(part=>{
-    const trimmed = part.trim();
-    const full = teacherFullNames[trimmed];
-    return `<span>${full || trimmed}</span>`;
-  }).join("");
+  dom.sheetMeta.innerHTML = it.sub && it.sub.length
+    ? it.sub.map(s=>`<span>${s.n} гр: ${expandMetaPart(s.who)} · ${s.where}</span>`).join("")
+    : it.d.split("·").map(part=>`<span>${expandMetaPart(part)}</span>`).join("");
 
   dom.sheetScrim.classList.add('open');
   dom.sheet.classList.add('open');
   dom.sheet.setAttribute('aria-hidden','false');
-  document.body.style.overflow = 'hidden';
+  dom.sheet.inert = false;
+  lockBodyScroll();
   dom.sheet.querySelector('.sheet-close').focus({preventScroll:true});
 }
 
@@ -1199,43 +1435,90 @@ function closeSheet(){
   dom.sheetScrim.classList.remove('open');
   dom.sheet.classList.remove('open');
   dom.sheet.setAttribute('aria-hidden','true');
-  document.body.style.overflow = '';
+  dom.sheet.inert = true;
+  unlockBodyScroll();
   if(lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus({preventScroll:true});
 }
 
 document.addEventListener('keydown', e=>{
-  if(e.key === 'Escape') closeSheet();
+  if(e.key === 'Escape'){ closeSheet(); return; }
+  if(e.key === 'Tab' && dom.sheet.classList.contains('open')){
+    const focusable = dom.sheet.querySelectorAll(
+      'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if(focusable.length === 0) return;
+    const first = focusable[0], last = focusable[focusable.length-1];
+    if(e.shiftKey && document.activeElement === first){
+      e.preventDefault(); last.focus();
+    } else if(!e.shiftKey && document.activeElement === last){
+      e.preventDefault(); first.focus();
+    }
+  }
 });
 
-// Drag the sheet (or its grabber) down to dismiss, like a native bottom sheet.
 (function initSheetDrag(){
-  let startY = 0, dragging = false, sheetHeight = 0;
-  const start = (y)=>{
-    dragging = true;
+  const DRAG_THRESHOLD = 6;
+  let tracking = false, dragging = false, startY = 0, sheetHeight = 0;
+
+  const beginTrack = (y)=>{
+    tracking = true;
+    dragging = false;
     startY = y;
     sheetHeight = dom.sheet.getBoundingClientRect().height;
-    dom.sheet.classList.add('dragging');
   };
   const move = (y)=>{
-    if(!dragging) return;
-    const delta = Math.max(0, y - startY);
-    dom.sheet.style.transform = `translate(-50%, ${delta}px)`;
+    if(!tracking) return;
+    const delta = y - startY;
+    if(!dragging){
+      if(Math.abs(delta) < DRAG_THRESHOLD) return;
+      dragging = true;
+      dom.sheet.classList.add('dragging');
+    }
+    dom.sheet.style.transform = `translate(-50%, ${Math.max(0, delta)}px)`;
   };
   const end = (y)=>{
-    if(!dragging) return;
-    dragging = false;
-    dom.sheet.classList.remove('dragging');
-    dom.sheet.style.transform = '';
+    if(!tracking) return;
+    tracking = false;
     const delta = Math.max(0, y - startY);
-    if(delta > sheetHeight * 0.28){
-      closeSheet();
+    if(dragging){
+      dragging = false;
+      dom.sheet.classList.remove('dragging');
+      dom.sheet.style.transform = '';
+      if(delta > sheetHeight * 0.28) closeSheet();
     }
   };
-  dom.sheetGrabber.addEventListener('pointerdown', e=>start(e.clientY));
-  window.addEventListener('pointermove', e=>{ if(dragging) move(e.clientY); });
+  dom.sheetGrabber.addEventListener('pointerdown', e=>beginTrack(e.clientY));
+  dom.sheetHeader.addEventListener('pointerdown', e=>beginTrack(e.clientY));
+  window.addEventListener('pointermove', e=>{ if(tracking) move(e.clientY); });
   window.addEventListener('pointerup', e=>end(e.clientY));
-  window.addEventListener('pointercancel', ()=>{ dragging=false; dom.sheet.classList.remove('dragging'); dom.sheet.style.transform=''; });
+  window.addEventListener('pointercancel', ()=>{
+    tracking = false; dragging = false;
+    dom.sheet.classList.remove('dragging'); dom.sheet.style.transform = '';
+  });
 })();
+
+document.addEventListener('click', e=>{
+  const slot = e.target.closest('.slot[data-person]');
+  if(slot) openSlot(slot.dataset.person, Number(slot.dataset.idx));
+});
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  const slot = e.target.closest && e.target.closest('.slot[data-person]');
+  if(slot){ e.preventDefault(); openSlot(slot.dataset.person, Number(slot.dataset.idx)); }
+});
+
+dom.rail.addEventListener('wheel', (e)=>{
+  if(e.deltaY === 0) return;
+  // На границах ленты дат отдаём вертикальный скролл странице, а не
+  // "проглатываем" его — иначе наведение курсора на ленту насовсем блокировало
+  // прокрутку колесом мыши всей страницы, даже когда сама лента уже
+  // докручена до конца и дальше скроллить нечего.
+  const atStart = dom.rail.scrollLeft <= 0;
+  const atEnd = dom.rail.scrollLeft >= dom.rail.scrollWidth - dom.rail.clientWidth - 1;
+  if((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
+  dom.rail.scrollLeft += e.deltaY;
+  e.preventDefault();
+}, {passive:false});
 
 const menuPodsolnechnayaMoskva = [
 ["6501","к","03:55","05:09","Москва"],
@@ -1561,8 +1844,8 @@ function durationText(dep, arr){
 function renderMenu(){
   const set = menuSets[currentMenu];
   const now = minutesNow();
-  // Mark the single next departure so it's obvious at a glance which
-  // train to run for, and fade out ones that have already left today.
+  // Отмечаем единственную ближайшую электричку — понятно с первого
+  // взгляда, на какую бежать, а уже отправленные сегодня гасим.
   let nextIdx = -1, nextDiff = Infinity;
   set.data.forEach(([,,dep], i)=>{
     const [h,m] = dep.split(":").map(Number);
@@ -1604,14 +1887,14 @@ function applyTheme(id, persist){
   if(persist){
     try{ localStorage.setItem(THEME_KEY, id); }catch(e){}
   }
+  const themeMeta = document.getElementById('themeColorMeta');
+  const themeDef = THEMES.find(t=>t.id===id);
+  if(themeMeta && themeDef) themeMeta.setAttribute('content', themeDef.bg);
   dom.themeSwitcher.querySelectorAll('.theme-swatch').forEach(el=>{
     const isActive = el.dataset.theme === id;
     el.classList.toggle('active', isActive);
     el.setAttribute('aria-pressed', String(isActive));
   });
-  const meta = document.getElementById('themeColorMeta');
-  const theme = THEMES.find(t=>t.id===id);
-  if(meta && theme) meta.setAttribute('content', theme.bg);
 }
 
 function buildThemeSwitcher(){
@@ -1633,23 +1916,52 @@ function buildThemeSwitcher(){
   applyTheme(currentThemeId(), false);
 }
 
+function checkDayRollover(){
+  const fresh = todayISO();
+  if(fresh !== TODAY){
+    const wasOnToday = currentDate === TODAY;
+    TODAY = fresh;
+    // pickInitialDate(), не голое присваивание TODAY: если реальное "сегодня"
+    // укатилось за пределы диапазона расписания, currentDate должен остаться
+    // на последнем дне расписания — иначе render() упадёт на
+    // dateList.find(...) === undefined.
+    if(wasOnToday) currentDate = pickInitialDate();
+    buildRail();
+    updateActivePill();
+    return true;
+  }
+  return false;
+}
+
 function initBoard(){
   buildThemeSwitcher();
   buildRail();
   render();
   renderMenu();
+  updateActivePill();
   document.querySelectorAll('.drop-in, .rise-in').forEach(el=>{
     el.addEventListener('animationend', function handler(){
       el.classList.remove('drop-in','rise-in','d1','d2','d3');
       el.removeEventListener('animationend', handler);
     });
+    window.setTimeout(()=>{
+      el.classList.remove('drop-in','rise-in','d1','d2','d3');
+    }, 1500);
   });
-  // Keep the "сейчас" / "следующая электричка" highlights accurate without
-  // needing a manual refresh — re-render just the parts that depend on
-  // the clock, once a minute, and again when the tab regains focus.
-  window.setInterval(()=>{ render(); renderMenu(); }, 60000);
+  const liveTick = ()=>{
+    const dayChanged = checkDayRollover();
+    if(dayChanged){
+      render(); // день сменился — набор пар другой, нужна полная перерисовка
+    } else {
+      // тот же день — точечно освежаем "сейчас/далее", не трогая DOM пар
+      refreshLiveIndicators(dom.andreySlots, dayItems.andrey);
+      refreshLiveIndicators(dom.anyaSlots, dayItems.anya);
+    }
+    renderMenu();
+  };
+  window.setInterval(liveTick, 60000);
   document.addEventListener('visibilitychange', ()=>{
-    if(!document.hidden){ render(); renderMenu(); }
+    if(!document.hidden) liveTick();
   });
 }
 
@@ -1657,3 +1969,5 @@ initBoard();
 </script>
 </body>
 </html>
+HTMLEOF
+echo "written, size:"; wc -c /home/claude/moy_new.html
