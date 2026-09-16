@@ -750,12 +750,30 @@
   }
   .theme-swatch:focus-visible{ outline-offset: 3px; }
 
+  .app-version{
+    position: fixed;
+    left: max(12px, env(safe-area-inset-left));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+    opacity: .22;
+    letter-spacing: .2px;
+    pointer-events: none;
+    user-select: none;
+    z-index: 40;
+    transition: opacity .3s var(--ease);
+  }
+  @media (hover: hover){
+    .app-version:hover{ opacity: .45; }
+  }
+
   @media print{
     /* Расписание логично распечатать: убираем декоративную анимацию,
        фон и интерактивные элементы, а также меню электричек — оставляем
        только сами пары. */
     body{ background:#fff !important; color:#000 !important; padding:0; }
-    .theme-switcher, .today-btn, .sheet-scrim, .detail-sheet, .menu-board{ display:none !important; }
+    .theme-switcher, .today-btn, .sheet-scrim, .detail-sheet, .menu-board, .app-version{ display:none !important; }
     .date-rail{ overflow:visible; flex-wrap:wrap; }
     .col{ box-shadow:none; border:1px solid #999; break-inside: avoid; }
     .slot{ animation:none !important; opacity:1 !important; }
@@ -826,6 +844,8 @@
     <div class="sheet-meta" id="sheetMeta"></div>
   </div>
 </div>
+
+<div class="app-version" aria-hidden="true">v1.2 · 16.09.2026</div>
 
 <script>
 // Расписание Ани по неделям: у МИЭТ чередуются числитель/знаменатель,
