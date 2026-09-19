@@ -235,6 +235,18 @@
     margin-bottom: 4px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    padding-left: calc(2px + (100vw - 100%) / 2);
+    padding-right: calc(2px + (100vw - 100%) / 2);
+  }
+  @media (max-width: 560px){
+    .date-rail{
+      width: 100%;
+      margin-left: 0;
+      padding-left: 2px;
+      padding-right: 2px;
+    }
   }
   .date-rail::-webkit-scrollbar{ display:none; }
   .date-pill{
