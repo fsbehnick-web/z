@@ -2176,18 +2176,22 @@ function initBoard(){
       el.classList.remove('drop-in','rise-in','d1','d2','d3');
     }, 1500);
   });
+  let lastRolloverCheck = 0;
   const liveTick = ()=>{
-    const dayChanged = checkDayRollover();
-    if(dayChanged){
-      render(); // день сменился — набор пар другой, нужна полная перерисовка
-    } else {
-      // тот же день — точечно освежаем "сейчас/далее", не трогая DOM пар
-      refreshLiveIndicators(dom.andreySlots, dayItems.andrey);
-      refreshLiveIndicators(dom.anyaSlots, dayItems.anya);
+    if(document.hidden) return;
+    const now = Date.now();
+    if(now - lastRolloverCheck > 60000){
+      lastRolloverCheck = now;
+      const dayChanged = checkDayRollover();
+      if(dayChanged){
+        render(); // день сменился — набор пар другой, нужна полная перерисовка
+      }
     }
+    refreshLiveIndicators(dom.andreySlots, dayItems.andrey);
+    refreshLiveIndicators(dom.anyaSlots, dayItems.anya);
     renderMenu();
   };
-  window.setInterval(liveTick, 60000);
+  window.setInterval(liveTick, 1000);
   document.addEventListener('visibilitychange', ()=>{
     if(!document.hidden) liveTick();
   });

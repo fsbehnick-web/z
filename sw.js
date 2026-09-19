@@ -1,5 +1,5 @@
 // Service worker — офлайн-оболочка Табло Андрея и Ани.
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `tablo-andrey-anya-shell-${CACHE_VERSION}`;
 
 const SHELL_ASSETS = [
