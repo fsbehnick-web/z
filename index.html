@@ -1070,6 +1070,17 @@ function byTime(a, b){
   return ra[0]-rb[0];
 }
 
+// Инициализация глобальных переменных расписания перед loadZData()
+let andreyWeekly = {};
+let andreyOneOffs = {};
+let anyaWeek1 = {};
+let anyaWeek2 = {};
+let anyaЧ = {};
+let anyaЗ = {};
+let REGULAR_START = '2026-09-14';
+let OVERALL_START = '2026-09-01';
+let OVERALL_END = '2026-12-30';
+
 // ------ Расписание Андрея (МПГУ, группа 107) ------
 // 1–13 сентября задано явно объектом andrey (адаптационный модуль выше).
 // С 14 сентября — недельный шаблон группы 107 с чередованием числ/знам,
