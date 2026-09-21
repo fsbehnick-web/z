@@ -1123,7 +1123,6 @@ async function loadZData() {
 
 function andreySchedule(iso){
   if(isHoliday(iso)) return [];
-  if(iso < REGULAR_START) return andrey[iso] || [];
   const parity = weekTypeFor(iso);
   const from = (andreyWeekly[weekdayIndex(iso)] || []).filter(it =>
     (it.week === "all" || it.week === parity) && (!it.until || iso <= it.until)
