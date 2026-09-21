@@ -1032,6 +1032,17 @@ const andrey = {
   "2026-09-13": [],
 };
 
+// Инициализация глобальных переменных расписания перед loadZData()
+let andreyWeekly = {};
+let andreyOneOffs = {};
+let anyaWeek1 = {};
+let anyaWeek2 = {};
+let anyaЧ = {};
+let anyaЗ = {};
+let REGULAR_START = '2026-09-14';
+let OVERALL_START = '2026-09-01';
+let OVERALL_END = '2026-12-30';
+
 // Список дат строится от начала семестра до его конца (день недели всегда
 // считается из iso — единый источник правды).
 const SCHEDULE_START = "2026-09-01";
@@ -1048,7 +1059,7 @@ function isoPlusDays(iso, n){
   return `${y}-${m}-${day}`;
 }
 
-const dateList = (() => {
+function buildDateList(){
   const list = [];
   let cur = SCHEDULE_START;
   while(cur <= OVERALL_END){
@@ -1057,7 +1068,8 @@ const dateList = (() => {
     cur = isoPlusDays(cur, 1);
   }
   return list;
-})();
+}
+let dateList = buildDateList();
 
 const weekdayNames = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
 
@@ -1082,17 +1094,6 @@ function byTime(a, b){
   return ra[0]-rb[0];
 }
 
-// Инициализация глобальных переменных расписания перед loadZData()
-let andreyWeekly = {};
-let andreyOneOffs = {};
-let anyaWeek1 = {};
-let anyaWeek2 = {};
-let anyaЧ = {};
-let anyaЗ = {};
-let REGULAR_START = '2026-09-14';
-let OVERALL_START = '2026-09-01';
-let OVERALL_END = '2026-12-30';
-
 // ------ Расписание Андрея (МПГУ, группа 107) ------
 // 1–13 сентября задано явно объектом andrey (адаптационный модуль выше).
 // С 14 сентября — недельный шаблон группы 107 с чередованием числ/знам,
@@ -1102,20 +1103,25 @@ let OVERALL_END = '2026-12-30';
 
 async function loadZData() {
   try {
-    const response = await fetch('./data.json');
+    const response = await fetch('./data.json', { cache: 'no-cache' });
+    if(!response.ok) throw new Error('data.json: HTTP ' + response.status);
     const data = await response.json();
     window.zData = data;
-    
-    // Map data back to the global variables the existing code expects
-    window.andreyWeekly = data.schedules.andreyWeekly || {};
-    window.andreyOneOffs = data.schedules.andreyOneOffs || {};
-    window.anyaWeek1 = data.schedules.anyaWeek1 || {};
-    window.anyaWeek2 = data.schedules.anyaWeek2 || {};
-    window.anyaЧ = data.schedules.anyaЧ || {};
-    window.anyaЗ = data.schedules.anyaЗ || {};
-    window.REGULAR_START = data.constants.REGULAR_START || '2026-09-14';
-    window.OVERALL_START = data.constants.OVERALL_START || '2026-09-01';
-    window.OVERALL_END = data.constants.OVERALL_END || '2026-12-30';
+
+    // ВАЖНО: присваиваем самим let-переменным. window.andreyWeekly = ... их
+    // не меняет — let на верхнем уровне не становится свойством window.
+    const sch = data.schedules || {};
+    const con = data.constants || {};
+    andreyWeekly  = sch.andreyWeekly  || {};
+    andreyOneOffs = sch.andreyOneOffs || {};
+    anyaWeek1 = sch.anyaWeek1 || {};
+    anyaWeek2 = sch.anyaWeek2 || {};
+    anyaЧ = sch.anyaЧ || {};
+    anyaЗ = sch.anyaЗ || {};
+    REGULAR_START = con.REGULAR_START || '2026-09-14';
+    OVERALL_START = con.OVERALL_START || '2026-09-01';
+    OVERALL_END   = con.OVERALL_END   || '2026-12-30';
+    dateList = buildDateList();
   } catch (e) {
     console.error('Failed to load Z data:', e);
   }
@@ -1144,7 +1150,6 @@ const MIET_TIME = {
 // anyaЧ moved to data.json
 // anyaЗ moved to data.json
 // Цикл МИЭТ: неделя 1 → 1ч, 2 → 1з, 3 → 1ч, 4 → 1з …
-const anyaCycle = [anyaЧ, anyaЗ, anyaЧ, anyaЗ];
 function anyaSchedule(iso){
   if(isHoliday(iso)) return [];
   if(iso < REGULAR_START){
@@ -1153,7 +1158,8 @@ function anyaSchedule(iso){
   }
   const weeksSince = Math.floor(Math.round((new Date(iso+"T00:00:00") - new Date(REGULAR_START+"T00:00:00")) / 86400000) / 7);
   const idx = ((weeksSince % 4) + 4) % 4;
-  return anyaCycle[idx][weekdayIndex(iso)] || [];
+  const cycle = [anyaЧ, anyaЗ, anyaЧ, anyaЗ];
+  return cycle[idx][weekdayIndex(iso)] || [];
 }
 
 const dom = {
@@ -2247,16 +2253,6 @@ function initBoard(){
     });
   }
 })();
-
-(async () => {
-  await loadZData();
-  // Trigger initial render now that data is loaded
-  if (typeof goToDate === 'function') {
-    goToDate();
-  } else if (typeof render === 'function') {
-    render();
-  }
-})();
 </script>
 </body>
-</html>
+  </html>
