@@ -1039,6 +1039,8 @@ let anyaWeek1 = {};
 let anyaWeek2 = {};
 let anyaЧ = {};
 let anyaЗ = {};
+let anyaWeeks = {};   // четыре недели МИЭТ: 1ч, 1з, 2ч, 2з
+let ANYA_CYCLE = ['2ч','2з','1ч','1з'];   // какая неделя идёт с REGULAR_START; правится в data.json
 let REGULAR_START = '2026-09-14';
 let OVERALL_START = '2026-09-01';
 let OVERALL_END = '2026-12-30';
@@ -1118,6 +1120,8 @@ async function loadZData() {
     anyaWeek2 = sch.anyaWeek2 || {};
     anyaЧ = sch.anyaЧ || {};
     anyaЗ = sch.anyaЗ || {};
+    anyaWeeks = sch.anyaWeeks || {};
+    if(Array.isArray(con.ANYA_CYCLE) && con.ANYA_CYCLE.length) ANYA_CYCLE = con.ANYA_CYCLE;
     REGULAR_START = con.REGULAR_START || '2026-09-14';
     OVERALL_START = con.OVERALL_START || '2026-09-01';
     OVERALL_END   = con.OVERALL_END   || '2026-12-30';
@@ -1144,12 +1148,11 @@ const MIET_TIME = {
   1:"09:00–10:20", 2:"10:30–11:50", 3:"12:00–13:20", 4:"14:00–15:20", 5:"15:30–16:50", 6:"17:00–18:20"
 };
 // 1–6 сентября — адаптационная неделя (anyaWeek1), 7–13 сентября — anyaWeek2.
-// С 14 сентября (начало пар) идёт цикл из четырёх расписаний МИЭТ: 1ч, 1з, 2ч, 2з.
-// В данных МИЭТ 1ч и 2ч совпадают (как и 1з≈2з), поэтому описываем два шаблона
-// и раскладываем по циклу: [1ч, 1з, 1ч, 1з].
-// anyaЧ moved to data.json
-// anyaЗ moved to data.json
-// Цикл МИЭТ: неделя 1 → 1ч, 2 → 1з, 3 → 1ч, 4 → 1з …
+// С 14 сентября (начало пар) идёт цикл из четырёх недель МИЭТ: 1ч, 1з, 2ч, 2з.
+// Семестр в МИЭТ начинается с числителя: неделя 31.08–06.09 — 1ч, 07.09 — 1з,
+// значит с 14.09 идут 2ч, 2з, 1ч, 1з и дальше по кругу. Порядок хранится в data.json
+// (constants.ANYA_CYCLE), недели — в schedules.anyaWeeks. 1ч и 2ч одинаковы, 1з и 2з
+// отличаются только аудиторией физкультуры в среду.
 function anyaSchedule(iso){
   if(isHoliday(iso)) return [];
   if(iso < REGULAR_START){
@@ -1157,9 +1160,11 @@ function anyaSchedule(iso){
     return store[weekdayIndex(iso)] || [];
   }
   const weeksSince = Math.floor(Math.round((new Date(iso+"T00:00:00") - new Date(REGULAR_START+"T00:00:00")) / 86400000) / 7);
-  const idx = ((weeksSince % 4) + 4) % 4;
-  const cycle = [anyaЧ, anyaЗ, anyaЧ, anyaЗ];
-  return cycle[idx][weekdayIndex(iso)] || [];
+  const n = ANYA_CYCLE.length;
+  const key = ANYA_CYCLE[((weeksSince % n) + n) % n];
+  // Запасной путь: если в data.json нет anyaWeeks, берём старые два шаблона.
+  const week = anyaWeeks[key] || (/ч$/.test(key) ? anyaЧ : anyaЗ);
+  return week[weekdayIndex(iso)] || [];
 }
 
 const dom = {
@@ -2174,7 +2179,7 @@ function initBoard(){
 (async () => { await loadZData(); initBoard(); })();
 </script>
 
-<div class="app-version" aria-hidden="true">v1.4<button class="update-check-btn" id="updateCheckBtn" type="button" title="Проверить обновления" aria-label="Проверить обновления">⟳</button></div>
+<div class="app-version" aria-hidden="true">v1.5<button class="update-check-btn" id="updateCheckBtn" type="button" title="Проверить обновления" aria-label="Проверить обновления">⟳</button></div>
 
 <script>
 (function initServiceWorker(){
