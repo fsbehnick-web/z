@@ -1,10 +1,11 @@
 // Service worker — офлайн-оболочка Табло Андрея и Ани.
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `tablo-andrey-anya-shell-${CACHE_VERSION}`;
 
 const SHELL_ASSETS = [
   './',
   './z.html',
+  './data.json',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -12,7 +13,11 @@ const SHELL_ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS))
+    // Не addAll: если хоть один файл из списка отдаст 404, addAll валит всю
+    // установку и service worker не ставится вообще.
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(SHELL_ASSETS.map((a) => cache.add(a)))
+    )
   );
 });
 
@@ -57,21 +62,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Собственная оболочка — cache-first
   if (url.origin === self.location.origin) {
+    const isPage = req.mode === 'navigate';
+    const isData = url.pathname.endsWith('/data.json');
+
+    // Страница и data.json — network-first: свежая версия, если есть сеть,
+    // иначе кэш. Так исправление расписания доходит без ручной очистки.
+    if (isPage || isData) {
+      event.respondWith(
+        fetch(req)
+          .then((res) => {
+            if (res && res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+            }
+            return res;
+          })
+          .catch(() => caches.match(req, { ignoreSearch: true }).then((c) => c || caches.match('./')))
+      );
+      return;
+    }
+
+    // Остальная оболочка (иконки, manifest) — cache-first
     event.respondWith(
       caches.match(req).then(
         (cached) =>
           cached ||
-          fetch(req)
-            .then((res) => {
-              if (res && res.ok) {
-                const copy = res.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-              }
-              return res;
-            })
-            .catch(() => cached)
+          fetch(req).then((res) => {
+            if (res && res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+            }
+            return res;
+          })
       )
     );
   }
