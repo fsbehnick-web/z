@@ -20,6 +20,17 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, body, tag } = event.data;
+    self.registration.showNotification(title, {
+      body: body,
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      tag: tag || 'class-notification',
+      requireInteraction: false,
+      vibrate: [200, 100, 200]
+    });
+  }
 });
 
 self.addEventListener('activate', (event) => {
