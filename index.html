@@ -2354,7 +2354,10 @@ function applyTheme(id, persist){
 
 function buildThemeSwitcher(){
   const frag = document.createDocumentFragment();
-  THEMES.forEach(t=>{
+  const hidden = getHiddenThemes();
+  const visibleThemes = THEMES.filter(t => !hidden.includes(t.id));
+
+  visibleThemes.forEach(t=>{
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'theme-swatch';
@@ -2386,12 +2389,53 @@ function closeThemeMenu(){
   document.body.style.overflow = '';
 }
 
+function getHiddenThemes(){
+  try{
+    const hidden = localStorage.getItem('hidden-themes');
+    return hidden ? JSON.parse(hidden) : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function hideTheme(themeId){
+  const hidden = getHiddenThemes();
+  if(!hidden.includes(themeId)){
+    hidden.push(themeId);
+    try{
+      localStorage.setItem('hidden-themes', JSON.stringify(hidden));
+    }catch(e){}
+  }
+  buildThemeSwitcher();
+  buildThemeMenuGrid();
+
+  // If hiding current theme, switch to first available
+  if(currentThemeId() === themeId){
+    const available = THEMES.filter(t => !getHiddenThemes().includes(t.id));
+    if(available.length > 0){
+      applyTheme(available[0].id, true);
+    }
+  }
+}
+
+function restoreAllThemes(){
+  try{
+    localStorage.removeItem('hidden-themes');
+  }catch(e){}
+  buildThemeSwitcher();
+  buildThemeMenuGrid();
+  updateThemeMenuInfo();
+}
+
 function buildThemeMenuGrid(){
   const currentId = currentThemeId();
   const grid = dom.themeMenuGrid;
   grid.innerHTML = '';
 
-  THEMES.forEach(t => {
+  const hidden = getHiddenThemes();
+  const visibleThemes = THEMES.filter(t => !hidden.includes(t.id));
+
+  visibleThemes.forEach(t => {
     const card = document.createElement('div');
     card.className = 'theme-card';
     if(t.id === currentId) card.classList.add('active');
@@ -2408,9 +2452,25 @@ function buildThemeMenuGrid(){
     desc.className = 'theme-card-description';
     desc.textContent = t.description || (t.id === 'mocha' ? 'Тёмная тема' : 'Светлая тема');
 
+    // Add delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'theme-card-delete';
+    deleteBtn.innerHTML = '×';
+    deleteBtn.title = 'Скрыть тему';
+    deleteBtn.setAttribute('aria-label', 'Скрыть тему ' + t.name);
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation();
+      if(visibleThemes.length <= 1){
+        alert('Нельзя удалить последнюю тему');
+        return;
+      }
+      hideTheme(t.id);
+    };
+
     card.appendChild(preview);
     card.appendChild(name);
     card.appendChild(desc);
+    card.appendChild(deleteBtn);
 
     card.onclick = () => {
       applyTheme(t.id, true);
@@ -2420,6 +2480,18 @@ function buildThemeMenuGrid(){
 
     grid.appendChild(card);
   });
+
+  // Show restore button if any themes are hidden
+  if(hidden.length > 0){
+    const restoreInfo = document.createElement('div');
+    restoreInfo.className = 'theme-restore-info';
+    restoreInfo.innerHTML = `
+      <span>Скрыто тем: ${hidden.length}</span>
+      <button class="theme-restore-btn" type="button">Восстановить все</button>
+    `;
+    restoreInfo.querySelector('.theme-restore-btn').onclick = restoreAllThemes;
+    grid.parentElement.appendChild(restoreInfo);
+  }
 }
 
 function updateThemeMenuInfo(){
