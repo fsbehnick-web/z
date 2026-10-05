@@ -29,7 +29,12 @@
       document.documentElement.setAttribute('data-theme', resolved);
     }
     var meta = document.getElementById('themeColorMeta');
-    if(meta) meta.setAttribute('content', resolved === 'terracotta' ? '#f1e3d0' : '#1a1512');
+    var themeColors = {
+      mocha: '#1a1512', terracotta: '#f1e3d0', ocean: '#0a1929',
+      lavender: '#f5f3ff', sunset: '#1a0f0a', forest: '#0d1f12',
+      noir: '#000000', mint: '#f0fdf4'
+    };
+    if(meta && resolved) meta.setAttribute('content', themeColors[resolved] || '#1a1512');
   }catch(e){}
 })();
 </script>
@@ -85,6 +90,121 @@
     --free: #516839;
     --shadow: 0 10px 26px -14px rgba(90,55,20,0.25);
   }
+
+  /* Океан — глубокая синева */
+  :root[data-theme="ocean"]{
+    color-scheme: dark;
+    --bg: #0a1929;
+    --panel: #132f4c;
+    --panel-2: #1e4976;
+    --line: #2d5f8d;
+    --andrey: #66b2ff;
+    --andrey-dim: #448aff;
+    --andrey-soft: rgba(102,178,255,0.12);
+    --anya: #ff6b9d;
+    --anya-dim: #e91e63;
+    --anya-soft: rgba(255,107,157,0.15);
+    --text: #e3f2fd;
+    --text-dim: #90caf9;
+    --free: #69f0ae;
+    --shadow: 0 10px 30px -12px rgba(0,0,0,0.7);
+  }
+
+  /* Лаванда — нежная пастель */
+  :root[data-theme="lavender"]{
+    color-scheme: light;
+    --bg: #f5f3ff;
+    --panel: #faf8ff;
+    --panel-2: #ede9fe;
+    --line: #ddd6fe;
+    --andrey: #7c3aed;
+    --andrey-dim: #6d28d9;
+    --andrey-soft: rgba(124,58,237,0.10);
+    --anya: #ec4899;
+    --anya-dim: #db2777;
+    --anya-soft: rgba(236,72,153,0.12);
+    --text: #1e1b4b;
+    --text-dim: #6b21a8;
+    --free: #059669;
+    --shadow: 0 10px 26px -14px rgba(124,58,237,0.2);
+  }
+
+  /* Закат — теплые оттенки */
+  :root[data-theme="sunset"]{
+    color-scheme: dark;
+    --bg: #1a0f0a;
+    --panel: #2d1810;
+    --panel-2: #3d2318;
+    --line: #5a3825;
+    --andrey: #ff9e5a;
+    --andrey-dim: #ff7b3d;
+    --andrey-soft: rgba(255,158,90,0.12);
+    --anya: #ff6b9d;
+    --anya-dim: #ff4081;
+    --anya-soft: rgba(255,107,157,0.15);
+    --text: #fff4ed;
+    --text-dim: #ffb38a;
+    --free: #7dd3c0;
+    --shadow: 0 10px 30px -12px rgba(0,0,0,0.65);
+  }
+
+  /* Лес — природные зеленые */
+  :root[data-theme="forest"]{
+    color-scheme: dark;
+    --bg: #0d1f12;
+    --panel: #1a2f1e;
+    --panel-2: #27402b;
+    --line: #3a5a3e;
+    --andrey: #81c784;
+    --andrey-dim: #66bb6a;
+    --andrey-soft: rgba(129,199,132,0.12);
+    --anya: #f48fb1;
+    --anya-dim: #ec407a;
+    --anya-soft: rgba(244,143,177,0.15);
+    --text: #e8f5e9;
+    --text-dim: #a5d6a7;
+    --free: #aed581;
+    --shadow: 0 10px 30px -12px rgba(0,0,0,0.7);
+  }
+
+  /* Нуар — высокий контраст */
+  :root[data-theme="noir"]{
+    color-scheme: dark;
+    --bg: #000000;
+    --panel: #1a1a1a;
+    --panel-2: #2a2a2a;
+    --line: #404040;
+    --andrey: #ffd700;
+    --andrey-dim: #ffb700;
+    --andrey-soft: rgba(255,215,0,0.12);
+    --anya: #ff1744;
+    --anya-dim: #d50000;
+    --anya-soft: rgba(255,23,68,0.15);
+    --text: #ffffff;
+    --text-dim: #b0b0b0;
+    --free: #00e676;
+    --shadow: 0 10px 30px -12px rgba(0,0,0,0.9);
+  }
+
+  /* Минт — свежая мята */
+  :root[data-theme="mint"]{
+    color-scheme: light;
+    --bg: #f0fdf4;
+    --panel: #f7fee7;
+    --panel-2: #dcfce7;
+    --line: #bbf7d0;
+    --andrey: #059669;
+    --andrey-dim: #047857;
+    --andrey-soft: rgba(5,150,105,0.10);
+    --anya: #f43f5e;
+    --anya-dim: #e11d48;
+    --anya-soft: rgba(244,63,94,0.12);
+    --text: #064e3b;
+    --text-dim: #047857;
+    --free: #10b981;
+    --shadow: 0 10px 26px -14px rgba(5,150,105,0.2);
+  }
+
   *{
     box-sizing:border-box;
     -webkit-tap-highlight-color: transparent;
@@ -2076,6 +2196,12 @@ const THEME_KEY = 'schedule-theme-andrey-anya';
 const THEMES = [
   {id:'mocha',      name:'Мокко',      bg:'#1a1512', a:'#d3a86a', b:'#d1657b'},
   {id:'terracotta', name:'Терракота', bg:'#f1e3d0', a:'#6b5a3a', b:'#a34b2b'},
+  {id:'ocean',      name:'Океан',      bg:'#0a1929', a:'#66b2ff', b:'#ff6b9d'},
+  {id:'lavender',   name:'Лаванда',    bg:'#f5f3ff', a:'#7c3aed', b:'#ec4899'},
+  {id:'sunset',     name:'Закат',      bg:'#1a0f0a', a:'#ff9e5a', b:'#ff6b9d'},
+  {id:'forest',     name:'Лес',        bg:'#0d1f12', a:'#81c784', b:'#f48fb1'},
+  {id:'noir',       name:'Нуар',       bg:'#000000', a:'#ffd700', b:'#ff1744'},
+  {id:'mint',       name:'Минт',       bg:'#f0fdf4', a:'#059669', b:'#f43f5e'},
 ];
 
 function currentThemeId(){
