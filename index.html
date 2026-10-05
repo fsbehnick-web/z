@@ -1114,7 +1114,36 @@
     <div class="kicker drop-in d1">Расписание</div>
     <h1 class="drop-in d2">Андрей &amp; Аня</h1>
     <p class="drop-in d3">1 сентября – 30 декабря 2026</p>
-    <div class="theme-switcher drop-in d3" id="themeSwitcher" role="group" aria-label="Выбор темы оформления"></div>
+    <div class="theme-switcher drop-in d3" id="themeSwitcher" role="group" aria-label="Выбор темы оформления">
+      <button class="theme-menu-trigger" id="themeMenuBtn" type="button" aria-label="Открыть меню тем">⚙</button>
+    </div>
+  </div>
+
+  <!-- Theme Menu Modal -->
+  <div class="theme-menu-scrim" id="themeMenuScrim"></div>
+  <div class="theme-menu" id="themeMenu" role="dialog" aria-modal="true" aria-labelledby="themeMenuTitle">
+    <div class="theme-menu-header">
+      <h2 id="themeMenuTitle">Темы оформления</h2>
+      <button class="theme-menu-close" id="themeMenuClose" type="button" aria-label="Закрыть">×</button>
+    </div>
+
+    <div class="theme-menu-section">
+      <h3>Доступные темы</h3>
+      <div class="theme-grid" id="themeMenuGrid"></div>
+    </div>
+
+    <div class="theme-menu-section">
+      <h3>Настройки</h3>
+      <div class="theme-info">
+        <p><strong>Текущая тема:</strong> <span id="currentThemeName"></span></p>
+        <p style="margin-top: 8px;">Тема сохраняется автоматически и применяется при следующем посещении.</p>
+      </div>
+    </div>
+
+    <div class="theme-controls">
+      <button class="theme-btn" id="themeResetBtn" type="button">Сброс на системную</button>
+      <button class="theme-btn primary" id="themeCloseBtn" type="button">Готово</button>
+    </div>
   </div>
 
   <div class="rise-in d1">
@@ -1387,6 +1416,14 @@ const dom = {
   menuList: document.getElementById('menuList'),
   menuIndicator: document.getElementById('menuIndicator'),
   themeSwitcher: document.getElementById('themeSwitcher'),
+  themeMenuBtn: document.getElementById('themeMenuBtn'),
+  themeMenu: document.getElementById('themeMenu'),
+  themeMenuScrim: document.getElementById('themeMenuScrim'),
+  themeMenuClose: document.getElementById('themeMenuClose'),
+  themeMenuGrid: document.getElementById('themeMenuGrid'),
+  currentThemeName: document.getElementById('currentThemeName'),
+  themeResetBtn: document.getElementById('themeResetBtn'),
+  themeCloseBtn: document.getElementById('themeCloseBtn'),
   sheetScrim: document.getElementById('sheetScrim'),
   sheet: document.getElementById('detailSheet'),
   sheetGrabber: document.getElementById('sheetGrabber'),
@@ -2334,6 +2371,74 @@ function buildThemeSwitcher(){
   applyTheme(currentThemeId(), false);
 }
 
+// Theme Menu Functions
+function openThemeMenu(){
+  buildThemeMenuGrid();
+  updateThemeMenuInfo();
+  dom.themeMenu.classList.add('open');
+  dom.themeMenuScrim.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeThemeMenu(){
+  dom.themeMenu.classList.remove('open');
+  dom.themeMenuScrim.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function buildThemeMenuGrid(){
+  const currentId = currentThemeId();
+  const grid = dom.themeMenuGrid;
+  grid.innerHTML = '';
+
+  THEMES.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'theme-card';
+    if(t.id === currentId) card.classList.add('active');
+
+    const preview = document.createElement('div');
+    preview.className = 'theme-preview';
+    preview.style.background = `linear-gradient(135deg, ${t.bg} 0%, ${t.a} 50%, ${t.b} 100%)`;
+
+    const name = document.createElement('p');
+    name.className = 'theme-card-name';
+    name.textContent = t.name;
+
+    const desc = document.createElement('p');
+    desc.className = 'theme-card-description';
+    desc.textContent = t.description || (t.id === 'mocha' ? 'Тёмная тема' : 'Светлая тема');
+
+    card.appendChild(preview);
+    card.appendChild(name);
+    card.appendChild(desc);
+
+    card.onclick = () => {
+      applyTheme(t.id, true);
+      buildThemeMenuGrid();
+      updateThemeMenuInfo();
+    };
+
+    grid.appendChild(card);
+  });
+}
+
+function updateThemeMenuInfo(){
+  const currentId = currentThemeId();
+  const theme = THEMES.find(t => t.id === currentId);
+  if(theme && dom.currentThemeName){
+    dom.currentThemeName.textContent = theme.name;
+  }
+}
+
+function resetToSystemTheme(){
+  const prefersDark = window.matchMedia && !window.matchMedia('(prefers-color-scheme: light)').matches;
+  const systemTheme = prefersDark ? 'mocha' : 'terracotta';
+  applyTheme(systemTheme, true);
+  buildThemeMenuGrid();
+  updateThemeMenuInfo();
+}
+
+
 function checkDayRollover(){
   const fresh = todayISO();
   if(fresh !== TODAY){
@@ -2357,6 +2462,21 @@ function initBoard(){
   render();
   renderMenu();
   updateActivePill();
+
+  // Theme menu event listeners
+  if(dom.themeMenuBtn) dom.themeMenuBtn.onclick = openThemeMenu;
+  if(dom.themeMenuClose) dom.themeMenuClose.onclick = closeThemeMenu;
+  if(dom.themeCloseBtn) dom.themeCloseBtn.onclick = closeThemeMenu;
+  if(dom.themeMenuScrim) dom.themeMenuScrim.onclick = closeThemeMenu;
+  if(dom.themeResetBtn) dom.themeResetBtn.onclick = resetToSystemTheme;
+
+  // Close theme menu on Escape
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && dom.themeMenu.classList.contains('open')){
+      closeThemeMenu();
+    }
+  });
+
   document.querySelectorAll('.drop-in, .rise-in').forEach(el=>{
     el.addEventListener('animationend', function handler(){
       el.classList.remove('drop-in','rise-in','d1','d2','d3');
