@@ -2247,16 +2247,6 @@ function initBoard(){
     });
   }
 })();
-
-(async () => {
-  await loadZData();
-  // Trigger initial render now that data is loaded
-  if (typeof goToDate === 'function') {
-    goToDate();
-  } else if (typeof render === 'function') {
-    render();
-  }
-})();
 </script>
 </body>
 </html>
