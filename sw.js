@@ -4,7 +4,7 @@ const CACHE_NAME = `tablo-andrey-anya-shell-${CACHE_VERSION}`;
 
 const SHELL_ASSETS = [
   './',
-  './z.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

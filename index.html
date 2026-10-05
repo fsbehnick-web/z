@@ -1048,16 +1048,19 @@ function isoPlusDays(iso, n){
   return `${y}-${m}-${day}`;
 }
 
-const dateList = (() => {
-  const list = [];
-  let cur = SCHEDULE_START;
-  while(cur <= OVERALL_END){
-    const d = new Date(cur + "T00:00:00");
-    list.push([cur, `${d.getDate()} ${MONTH_SHORT_RU[d.getMonth()]}`]);
-    cur = isoPlusDays(cur, 1);
-  }
-  return list;
-})();
+// Инициализация глобальных переменных расписания перед loadZData()
+let andreyWeekly = {};
+let andreyOneOffs = {};
+let anyaWeek1 = {};
+let anyaWeek2 = {};
+let anyaЧ = {};
+let anyaЗ = {};
+let REGULAR_START = '2026-09-14';
+let OVERALL_START = '2026-09-01';
+let OVERALL_END = '2026-12-30';
+
+// dateList will be initialized after data loads
+let dateList = [];
 
 const weekdayNames = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
 
@@ -1105,17 +1108,27 @@ async function loadZData() {
     const response = await fetch('./data.json');
     const data = await response.json();
     window.zData = data;
-    
+
     // Map data back to the global variables the existing code expects
-    window.andreyWeekly = data.schedules.andreyWeekly || {};
-    window.andreyOneOffs = data.schedules.andreyOneOffs || {};
-    window.anyaWeek1 = data.schedules.anyaWeek1 || {};
-    window.anyaWeek2 = data.schedules.anyaWeek2 || {};
-    window.anyaЧ = data.schedules.anyaЧ || {};
-    window.anyaЗ = data.schedules.anyaЗ || {};
-    window.REGULAR_START = data.constants.REGULAR_START || '2026-09-14';
-    window.OVERALL_START = data.constants.OVERALL_START || '2026-09-01';
-    window.OVERALL_END = data.constants.OVERALL_END || '2026-12-30';
+    andreyWeekly = data.schedules.andreyWeekly || {};
+    andreyOneOffs = data.schedules.andreyOneOffs || {};
+    anyaWeek1 = data.schedules.anyaWeek1 || {};
+    anyaWeek2 = data.schedules.anyaWeek2 || {};
+    anyaЧ = data.schedules.anyaЧ || {};
+    anyaЗ = data.schedules.anyaЗ || {};
+    REGULAR_START = data.constants.REGULAR_START || '2026-09-14';
+    OVERALL_START = data.constants.OVERALL_START || '2026-09-01';
+    OVERALL_END = data.constants.OVERALL_END || '2026-12-30';
+
+    // Initialize dateList after OVERALL_END is loaded
+    const list = [];
+    let cur = SCHEDULE_START;
+    while(cur <= OVERALL_END){
+      const d = new Date(cur + "T00:00:00");
+      list.push([cur, `${d.getDate()} ${MONTH_SHORT_RU[d.getMonth()]}`]);
+      cur = isoPlusDays(cur, 1);
+    }
+    dateList = list;
   } catch (e) {
     console.error('Failed to load Z data:', e);
   }
