@@ -1,0 +1,62 @@
+  .theme-card-delete{
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--text-dim);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: var(--t-bg), var(--t-color), transform .2s var(--ease);
+    z-index: 10;
+  }
+  .theme-card:hover .theme-card-delete{
+    display: flex;
+  }
+  .theme-card-delete:hover{
+    background: var(--anya);
+    color: var(--bg);
+    border-color: var(--anya);
+    transform: scale(1.1);
+  }
+  .theme-card-delete:active{
+    transform: scale(0.95);
+  }
+  .theme-restore-info{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .theme-restore-btn{
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--andrey);
+    color: var(--bg);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--t-bg), transform .2s var(--ease);
+  }
+  .theme-restore-btn:hover{
+    background: var(--andrey-dim);
+    transform: translateY(-1px);
+  }
+  .theme-restore-btn:active{
+    transform: translateY(0);
+  }
