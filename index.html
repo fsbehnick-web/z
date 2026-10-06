@@ -1474,11 +1474,6 @@ function anyaSchedule(iso){
   const idx = ((weeksSince % 4) + 4) % 4;
   const template = (idx === 0 || idx === 2) ? anyaЧ : anyaЗ;
   const schedule = template[weekdayIndex(iso)] || [];
-
-  // Если расписание пустое, показываем заглушку
-  if(schedule.length === 0 && iso >= REGULAR_START){
-    return [{t:"—", w:"Расписание уточняется", d:"TODO: требуются данные для МИЭТ УТС-11"}];
-  }
   return schedule;
 }
 
