@@ -33,6 +33,21 @@
   }catch(e){}
 })();
 </script>
+  <script>
+(function(){var d=document.documentElement,ua=navigator.userAgent||'',p=navigator.platform||'',tp=navigator.maxTouchPoints||0;
+var ipad=/iPad/.test(ua)||(p==='MacIntel'&&tp>1),ios=ipad||/iPhone|iPod/.test(ua),android=/Android/i.test(ua);
+var os=ios?'ios':android?'android':/Win/i.test(p+ua)?'windows':/Mac/i.test(p)?'mac':/Linux|X11|CrOS/i.test(p+ua)?'linux':'other';
+var tablet=ipad||(android&&!/Mobile/i.test(ua)),mobile=(ios||android)&&!tablet;
+d.setAttribute('data-os',os);d.setAttribute('data-device',mobile?'mobile':tablet?'tablet':'desktop');
+if(tp>0||'ontouchstart' in window)d.setAttribute('data-touch','');
+try{if((window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone)d.setAttribute('data-standalone','')}catch(e){}})();
+</script>
+<script>
+(function(){try{var l=JSON.parse(localStorage.getItem('custom-themes-andrey-anya')||'[]');if(!l.length)return;
+var s=document.createElement('style');s.id='custom-themes-style';s.textContent=l.map(function(t){return t.css||''}).join('');document.head.appendChild(s);
+var id=localStorage.getItem('schedule-theme-andrey-anya'),t=l.filter(function(x){return x.id===id})[0];
+if(t){document.documentElement.setAttribute('data-theme',id);document.getElementById('themeColorMeta').setAttribute('content',t.bg||t.c1)}}catch(e){}})();
+</script>
 <noscript><div style="max-width:800px;margin:40px auto;padding:16px 20px;font-family:'Manrope',-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#5b4636;background:#f4ead9;border:1px solid #d9c3a3;border-radius:14px;">Табло — это интерактивное приложение, для его работы нужен включённый JavaScript. Пожалуйста, включите его и обновите страницу.</div></noscript>
 <title>Табло — Андрей и Аня</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2770,6 +2785,178 @@ function initBoard(){
       }).catch(function(){ window.location.reload(); });
     });
   }
+})();
+</script>
+  <style>
+html[data-touch] .theme-menu-trigger,html[data-touch] .update-check-btn,html[data-touch] .theme-menu-close{position:relative}
+html[data-touch] .theme-menu-trigger::after,html[data-touch] .update-check-btn::after,html[data-touch] .theme-menu-close::after{content:"";position:absolute;inset:-10px}
+.tm-ib,.tm-sw{position:relative}
+html[data-touch] .tm-ib::after,html[data-touch] .tm-sw::after{content:"";position:absolute;inset:-8px}
+html[data-standalone][data-touch] body{overscroll-behavior-y:contain}
+html[data-device="mobile"] .theme-switcher .theme-swatch:not(.active){display:none}
+html[data-device="mobile"] .theme-menu{top:auto;bottom:0;left:0;transform:translateY(100%);width:100%;max-height:88vh;max-height:88dvh;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+html[data-device="mobile"] .theme-menu.open{transform:none}
+html[data-device="mobile"] .theme-grid{grid-template-columns:repeat(2,1fr)}
+html[data-device="tablet"] .theme-grid{grid-template-columns:repeat(3,1fr)}
+html[data-device="mobile"] .day-title-row{flex-direction:column;gap:8px}
+html[data-device="mobile"] .today-btn:not(.show){display:none}
+html[data-device="mobile"] .today-btn.show{position:static;transform:none}
+html[data-device="mobile"] .menu-tab{font-size:11px;padding:8px 3px;line-height:1.25}
+html[data-device="mobile"] .menu-list{max-height:50vh;max-height:50dvh;overscroll-behavior:contain}
+.tm-acts{position:absolute;right:6px;bottom:6px;display:flex;gap:4px}
+.tm-ib{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--text-dim);font-size:14px;line-height:1;cursor:pointer;padding:0}
+.tm-ed h3{margin:0 0 10px}
+.tm-name,.tm-in input[type=text]{width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
+.tm-name:focus,.tm-in input[type=text]:focus{border-color:var(--andrey)}
+.tm-in{display:flex;gap:8px}
+.tm-in input[type=color]{flex:0 0 48px;height:44px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}
+.tm-in input.bad{border-color:#e5484d}
+.tm-f{margin-top:12px}.tm-f label{display:block;font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:6px}
+.tm-pal{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.tm-sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer}
+.tm-mode{display:flex;gap:6px;margin-top:14px}
+.tm-mode button{flex:1;padding:10px 6px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer}
+.tm-mode button.on{border-color:var(--andrey);color:var(--andrey);background:var(--andrey-soft)}
+.tm-adv{margin-top:12px;font-size:13px;color:var(--text-dim)}.tm-adv summary{cursor:pointer;padding:8px 0;font-weight:700}
+.tm-hint{font-size:11.5px;margin:10px 0 0}
+.tm-prev{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg);color:var(--text)}
+.tm-pv-h{padding:8px 12px;font-weight:800;font-size:13px;color:var(--andrey);background:var(--panel-2)}.tm-pv-h i{font-style:normal;color:var(--anya);margin-left:8px}
+.tm-pv-s{padding:9px 12px;font-size:12.5px;background:var(--panel);border-top:1px solid var(--line);border-left:3px solid transparent}
+.tm-pv-s b{color:var(--text-dim);margin-right:6px}.tm-pv-s.now{background:var(--anya-soft);border-left-color:var(--anya)}
+.tm-btns{display:flex;gap:8px;margin-top:14px}
+</style>
+<script>
+(function(){
+'use strict';
+const K='custom-themes-andrey-anya',DS=document.documentElement.dataset;
+const $=s=>document.querySelector(s),cl=(n,a,b)=>Math.min(b,Math.max(a,n));
+const rd=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const wr=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+
+/* ── цвет ── */
+const hex2=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const rgb2=(r,g,b)=>'#'+[r,g,b].map(x=>Math.round(cl(x,0,255)).toString(16).padStart(2,'0')).join('');
+function h2hsl(h){const[r,g,b]=hex2(h).map(x=>x/255),M=Math.max(r,g,b),m=Math.min(r,g,b),l=(M+m)/2,d=M-m;let H=0,S=0;
+  if(d){S=l>.5?d/(2-M-m):d/(M+m);H=M===r?(g-b)/d+(g<b?6:0):M===g?(b-r)/d+2:(r-g)/d+4;H*=60}return[H,S*100,l*100]}
+function hsl2h(h,s,l){h=((h%360)+360)%360;s/=100;l/=100;const a=s*Math.min(l,1-l),f=n=>{const k=(n+h/30)%12;return(l-a*Math.max(-1,Math.min(k-3,9-k,1)))*255};return rgb2(f(0),f(8),f(4))}
+function parse(s){
+  s=String(s||'').trim().toLowerCase();let m;
+  if(m=s.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/)){let h=m[1];if(h.length==3)h=[...h].map(c=>c+c).join('');return'#'+h}
+  const n=s.match(/-?\d+(?:\.\d+)?/g);if(!n||n.length!=3)return null;const v=n.map(Number);
+  if(/hsl|%/.test(s))return hsl2h(v[0],cl(v[1],0,100),cl(v[2],0,100));
+  return rgb2(...v);
+}
+const lum=h=>{const[r,g,b]=hex2(h).map(x=>{x/=255;return x<=.03928?x/12.92:((x+.055)/1.055)**2.4});return .2126*r+.7152*g+.0722*b};
+const ctr=(a,b)=>{const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+const mix=(a,b,t)=>{const p=hex2(a),q=hex2(b);return rgb2(...p.map((v,i)=>v+(q[i]-v)*t))};
+const soft=(c,a)=>`rgba(${hex2(c).join(',')},${a})`;
+const isDark=t=>t.mode==='dark'||(t.mode!=='light'&&lum(t.c1)<.18);
+
+/* ── палитра из двух цветов: фон + акцент (Андрей), цвет Ани подбирается сам ── */
+function pal(c1,c2,mode,adv){
+  adv=adv||{};const dark=isDark({mode,c1}),H=h2hsl(c1),A=h2hsl(c2),bg=c1;
+  const text=adv.text||hsl2h(H[0],Math.min(H[1],22),dark?92:11);
+  const panel=adv.panel||mix(bg,'#ffffff',dark?.05:.5),line=adv.line||mix(bg,text,dark?.18:.15);
+  const fit=h=>{let L=A[2],c;for(let i=0;i<24;i++){c=hsl2h(h,Math.max(A[1],25),cl(L,6,94));if(ctr(c,bg)>=3.2)break;L+=dark?3:-3}return c};
+  const a1=adv.andrey||fit(A[0]),a2=adv.anya||fit(A[0]+150),dim=c=>mix(c,bg,.3);
+  return{bg,panel,'panel-2':mix(bg,text,dark?.1:.07),line,text,'text-dim':mix(text,bg,.42),
+    andrey:a1,'andrey-dim':dim(a1),'andrey-soft':soft(a1,.12),anya:a2,'anya-dim':dim(a2),'anya-soft':soft(a2,.15),
+    free:dark?'#8fbf7a':'#516839',shadow:dark?'0 10px 30px -12px rgba(0,0,0,.6)':'0 10px 26px -14px rgba(90,55,20,.25)'};
+}
+const vars=p=>Object.entries(p).map(([k,v])=>`--${k}:${v}`).join(';');
+const toCss=t=>`:root[data-theme="${t.id}"]{color-scheme:${isDark(t)?'dark':'light'};${vars(pal(t.c1,t.c2,t.mode,t.adv))}}`;
+function norm(t){t.mode=(t.mode==='light'||t.mode==='dark')?t.mode:'auto';const p=pal(t.c1,t.c2,t.mode,t.adv);
+  t.bg=t.c1;t.a=p.andrey;t.b=p.anya;t.custom=true;t.css=toCss(t);return t}
+
+/* ── хранилище: свои темы живут в общем массиве THEMES, поэтому
+      переключатель, меню и applyTheme сайта работают с ними как со встроенными ── */
+const styleEl=()=>{let e=$('#custom-themes-style');if(!e){e=document.createElement('style');e.id='custom-themes-style';document.head.appendChild(e)}return e};
+function saveCustoms(l){const n=l.map(norm);wr(K,n);styleEl().textContent=n.map(t=>t.css).join('');
+  for(let i=THEMES.length-1;i>=0;i--)if(THEMES[i].custom)THEMES.splice(i,1);THEMES.push(...n)}
+const grad=t=>`linear-gradient(135deg,${t.bg} 40%,${t.a} 70%,${t.b} 100%)`;
+const refresh=()=>{buildThemeSwitcher();buildThemeMenuGrid();updateThemeMenuInfo()};
+const mkBtn=(txt,label,fn)=>{const b=document.createElement('button');b.type='button';b.className='tm-ib';b.textContent=txt;b.title=label;b.setAttribute('aria-label',label);b.onclick=e=>{e.stopPropagation();fn()};return b};
+
+window.openThemeMenu=function(){buildThemeMenuGrid();updateThemeMenuInfo();dom.themeMenu.classList.add('open');dom.themeMenuScrim.classList.add('open');lockBodyScroll()};
+window.closeThemeMenu=function(){if(!dom.themeMenu.classList.contains('open'))return;dom.themeMenu.classList.remove('open');dom.themeMenuScrim.classList.remove('open');unlockBodyScroll()};
+function del(id){if(!confirm('Удалить эту тему?'))return;saveCustoms(rd(K,[]).filter(t=>t.id!==id));
+  if(currentThemeId()===id)applyTheme('mocha',true);refresh()}
+
+window.buildThemeMenuGrid=function(){
+  const g=dom.themeMenuGrid,cur=currentThemeId(),h=getHiddenThemes(),vis=THEMES.filter(t=>!h.includes(t.id));g.innerHTML='';
+  vis.forEach(t=>{
+    const c=document.createElement('div');c.className='theme-card'+(t.id===cur?' active':'');c.tabIndex=0;c.setAttribute('role','button');
+    c.innerHTML=`<div class="theme-preview" style="background:${grad(t)}"></div><p class="theme-card-name"></p><p class="theme-card-description">${t.custom?'Своя тема':(t.id==='mocha'?'Тёмная тема':'Светлая тема')}</p>`;
+    c.querySelector('.theme-card-name').textContent=t.name;
+    const pick=()=>{applyTheme(t.id,true);buildThemeMenuGrid();updateThemeMenuInfo()};
+    c.onclick=pick;c.onkeydown=e=>{if(e.target===c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();pick()}};
+    const a=document.createElement('div');a.className='tm-acts';
+    if(t.custom){a.appendChild(mkBtn('✎','Изменить',()=>edit(t)));a.appendChild(mkBtn('×','Удалить',()=>del(t.id)))}
+    else if(vis.length>1)a.appendChild(mkBtn('×','Скрыть',()=>hideTheme(t.id)));
+    c.appendChild(a);g.appendChild(c);
+  });
+  const p=g.parentElement;p.querySelector('.theme-restore-info')?.remove();
+  if(h.length){const r=document.createElement('div');r.className='theme-restore-info';
+    r.innerHTML=`<span>Скрыто тем: ${h.length}</span><button class="theme-restore-btn" type="button">Восстановить все</button>`;
+    r.querySelector('button').onclick=restoreAllThemes;p.appendChild(r)}
+};
+
+/* ── редактор тем ── */
+const BG=['#1a1512','#121a3a','#0b3d0b','#5a1020','#10151c','#f1e3d0','#fefae0','#f1faee','#e9d8a6','#ffffff'];
+const AC=['#d3a86a','#e63946','#c68642','#8a8a4b','#606c38','#2a9d8f','#4c6ef5','#9b5de5','#f15bb5','#fb8500'];
+const ADV=[['panel','Панели'],['text','Текст'],['andrey','Цвет Андрея'],['anya','Цвет Ани'],['line','Линии']];
+const DEF=()=>({c1:'#1a1512',c2:'#d3a86a',mode:'auto',adv:{}});
+let st=DEF(),editId=null,host;
+const field=(k,l,pr)=>`<div class="tm-f"><label>${l}</label><div class="tm-in"><input type="color" data-k="${k}" data-t="p" aria-label="${l}"><input type="text" data-k="${k}" data-t="t" placeholder="#d3a86a · rgb(211,168,106) · hsl(37,52%,62%)" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="${l}: значение"></div>${pr?`<div class="tm-pal" data-k="${k}">${pr.map(c=>`<button type="button" class="tm-sw" style="background:${c}" data-c="${c}" aria-label="${c}"></button>`).join('')}</div>`:''}</div>`;
+function paint(skip){
+  const p=pal(st.c1,st.c2,st.mode,st.adv);
+  host.querySelectorAll('input[data-k]').forEach(i=>{const k=i.dataset.k,main=k==='c1'||k==='c2';
+    if(i.dataset.t==='p')i.value=main?st[k]:(st.adv[k]||p[k]);else if(i!==skip)i.value=main?st[k]:(st.adv[k]||'')});
+  host.querySelectorAll('.tm-mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===st.mode));
+  $('#tmPrev').style.cssText=vars(p);
+}
+function setVal(k,v){if(k==='c1'||k==='c2'){if(v)st[k]=v}else if(v)st.adv[k]=v;else delete st.adv[k]}
+function resetEd(){editId=null;st=DEF();$('#tmName').value='';$('#tmEdTitle').textContent='Создать свою тему';paint()}
+function edit(t){editId=t.id;st={c1:t.c1,c2:t.c2,mode:t.mode,adv:{...(t.adv||{})}};$('#tmName').value=t.name;
+  $('#tmEdTitle').textContent='Изменить тему';paint();host.scrollIntoView({behavior:'smooth',block:'start'})}
+function buildEditor(){
+  host=document.createElement('div');host.className='theme-menu-section tm-ed';host.id='tmEd';
+  host.innerHTML=`<h3 id="tmEdTitle">Создать свою тему</h3><input id="tmName" class="tm-name" maxlength="24" placeholder="Название темы" aria-label="Название темы">
+${field('c1','Фон',BG)}${field('c2','Акцент',AC)}
+<div class="tm-mode" role="group" aria-label="Режим">${[['auto','Авто'],['dark','Тёмная'],['light','Светлая']].map(([v,l])=>`<button type="button" data-m="${v}">${l}</button>`).join('')}</div>
+<details class="tm-adv"><summary>Тонкая настройка (необязательно)</summary>${ADV.map(([k,l])=>field(k,l)).join('')}<p class="tm-hint">Пустое поле — цвет подберётся автоматически. Принимаются HEX, rgb(…), hsl(…) или просто три числа.</p></details>
+<div class="tm-prev" id="tmPrev"><div class="tm-pv-h">Андрей <i>Аня</i></div><div class="tm-pv-s"><b>09:00–10:30</b>Математический анализ</div><div class="tm-pv-s now"><b>10:30–11:50</b>Физика</div></div>
+<div class="tm-btns"><button type="button" id="tmSave" class="theme-btn primary">Сохранить тему</button><button type="button" id="tmClear" class="theme-btn">Очистить</button></div>`;
+  dom.themeMenu.querySelectorAll('.theme-menu-section')[1].before(host);
+  host.addEventListener('input',e=>{const t=e.target,k=t.dataset.k;if(!k)return;
+    if(t.dataset.t==='p')setVal(k,t.value);
+    else{const raw=t.value.trim(),v=raw?parse(raw):'';t.classList.toggle('bad',!!raw&&!v);if(raw&&!v)return;setVal(k,v)}
+    paint(t)});
+  host.addEventListener('change',()=>paint());
+  host.addEventListener('click',e=>{
+    const sw=e.target.closest('.tm-sw');if(sw){setVal(sw.parentElement.dataset.k,sw.dataset.c);paint();return}
+    const m=e.target.closest('.tm-mode button');if(m){st.mode=m.dataset.m;paint()}});
+  $('#tmClear').onclick=resetEd;
+  $('#tmSave').onclick=()=>{
+    const t=norm({id:editId||'custom-'+Date.now(),name:$('#tmName').value.trim()||'Моя тема',c1:st.c1,c2:st.c2,mode:st.mode,adv:{...st.adv}});
+    const l=rd(K,[]),i=l.findIndex(x=>x.id===t.id);if(i>=0)l[i]=t;else l.push(t);
+    saveCustoms(l);applyTheme(t.id,true);resetEd();refresh()};
+  paint();
+}
+
+/* ── сенсорные устройства: свайп влево/вправо меняет день ── */
+if('touch' in DS){
+  let x0=0,y0=0,t0=0;const el=$('#daySwap');
+  el.addEventListener('touchstart',e=>{const t=e.changedTouches[0];x0=t.clientX;y0=t.clientY;t0=Date.now()},{passive:true});
+  el.addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+    if(Date.now()-t0<700&&Math.abs(dx)>60&&Math.abs(dy)<50&&Math.abs(dx)>Math.abs(dy)*1.5&&!dom.sheet.classList.contains('open'))stepDay(dx<0?1:-1)},{passive:true});
+}
+
+saveCustoms(rd(K,[]));
+buildEditor();
+/* на случай, если initBoard успел привязать старые обработчики до этого скрипта */
+if(dom.themeMenuBtn)dom.themeMenuBtn.onclick=openThemeMenu;
+[dom.themeMenuClose,dom.themeCloseBtn,dom.themeMenuScrim].forEach(e=>{if(e)e.onclick=closeThemeMenu});
 })();
 </script>
 </body>
