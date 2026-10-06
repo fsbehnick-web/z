@@ -1381,17 +1381,6 @@ function byTime(a, b){
   return ra[0]-rb[0];
 }
 
-// Инициализация глобальных переменных расписания перед loadZData()
-let andreyWeekly = {};
-let andreyOneOffs = {};
-let anyaWeek1 = {};
-let anyaWeek2 = {};
-let anyaЧ = {};
-let anyaЗ = {};
-let REGULAR_START = '2026-09-14';
-let OVERALL_START = '2026-09-01';
-let OVERALL_END = '2026-12-30';
-
 // ------ Расписание Андрея (МПГУ, группа 107) ------
 // 1–13 сентября задано явно объектом andrey (адаптационный модуль выше).
 // С 14 сентября — недельный шаблон группы 107 с чередованием числ/знам,
@@ -1402,6 +1391,7 @@ let OVERALL_END = '2026-12-30';
 async function loadZData() {
   try {
     const response = await fetch('./data.json');
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     window.zData = data;
 
@@ -1425,13 +1415,33 @@ async function loadZData() {
       cur = isoPlusDays(cur, 1);
     }
     dateList = list;
+
+    // Инициализируем currentDate после загрузки dateList
+    currentDate = pickInitialDate();
   } catch (e) {
     console.error('Failed to load Z data:', e);
+    showDataError(e);
+    throw e;
   }
+}
+
+function showDataError(error){
+  const wrap = document.getElementById('pageWrap');
+  if(!wrap) return;
+  wrap.innerHTML = `
+    <div style="max-width:500px;margin:80px auto;padding:32px;text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+      <h2 style="margin:0 0 12px;font-size:20px;color:var(--text);">Не удалось загрузить расписание</h2>
+      <p style="margin:0 0 24px;font-size:14px;color:var(--text-dim);">${error.message || 'Проверьте подключение к интернету'}</p>
+      <button onclick="location.reload()" style="padding:12px 24px;border:1px solid var(--line);border-radius:10px;background:var(--andrey);color:var(--bg);font-size:14px;font-weight:600;cursor:pointer;">Повторить</button>
+    </div>
+  `;
 }
 
 function andreySchedule(iso){
   if(isHoliday(iso)) return [];
+  // Используем объект andrey для дат 1-13 сентября
+  if(iso < REGULAR_START && andrey[iso]) return andrey[iso];
   const parity = weekTypeFor(iso);
   const from = (andreyWeekly[weekdayIndex(iso)] || []).filter(it =>
     (it.week === "all" || it.week === parity) && (!it.until || iso <= it.until)
@@ -1453,16 +1463,23 @@ const MIET_TIME = {
 // anyaЧ moved to data.json
 // anyaЗ moved to data.json
 // Цикл МИЭТ: неделя 1 → 1ч, 2 → 1з, 3 → 1ч, 4 → 1з …
-const anyaCycle = [anyaЧ, anyaЗ, anyaЧ, anyaЗ];
 function anyaSchedule(iso){
   if(isHoliday(iso)) return [];
   if(iso < REGULAR_START){
     const store = iso < "2026-09-07" ? anyaWeek1 : anyaWeek2;
     return store[weekdayIndex(iso)] || [];
   }
+  // Динамически выбираем шаблон Ч/З по чётности недели
   const weeksSince = Math.floor(Math.round((new Date(iso+"T00:00:00") - new Date(REGULAR_START+"T00:00:00")) / 86400000) / 7);
   const idx = ((weeksSince % 4) + 4) % 4;
-  return anyaCycle[idx][weekdayIndex(iso)] || [];
+  const template = (idx === 0 || idx === 2) ? anyaЧ : anyaЗ;
+  const schedule = template[weekdayIndex(iso)] || [];
+
+  // Если расписание пустое, показываем заглушку
+  if(schedule.length === 0 && iso >= REGULAR_START){
+    return [{t:"—", w:"Расписание уточняется", d:"TODO: требуются данные для МИЭТ УТС-11"}];
+  }
+  return schedule;
 }
 
 const dom = {
@@ -1512,11 +1529,12 @@ function todayISO(){
 let TODAY = todayISO();
 
 function pickInitialDate(){
+  if(!dateList || dateList.length === 0) return SCHEDULE_START; // защита от пустого списка
   if(dateList.some(([iso])=>iso===TODAY)) return TODAY;
   if(TODAY < dateList[0][0]) return dateList[0][0];
   return dateList[dateList.length-1][0];
 }
-let currentDate = pickInitialDate();
+let currentDate = SCHEDULE_START; // будет инициализирован после loadZData
 
 function weekdayIndex(dateStr){
   const d = new Date(dateStr + "T00:00:00");
@@ -1757,6 +1775,7 @@ function cleanShortDesc(str) {
 }
 
 function expandMetaPart(part) {
+  if(part == null) return ''; // защита от null/undefined
   let res = part.trim();
   Object.entries(titlesMap).forEach(([shortTitle, fullTitle]) => {
     const escaped = shortTitle.replace(/\./g, '\\.');
@@ -2367,6 +2386,37 @@ function renderMenu(){
     const diff = h*60+m - now;
     if(diff >= 0 && diff < nextDiff){ nextDiff = diff; nextIdx = i; }
   });
+
+  // Оптимизация: если DOM уже построен, обновляем только классы
+  const existingRows = dom.menuList.querySelectorAll('.menu-row');
+  if(existingRows.length === set.data.length){
+    existingRows.forEach((row, i) => {
+      const [,,dep] = set.data[i];
+      const [h,m] = dep.split(":").map(Number);
+      const isPast = (h*60+m) < now;
+      const isNext = i === nextIdx;
+      row.classList.toggle('past', isPast);
+      row.classList.toggle('next', isNext);
+
+      // Обновляем тег "через N мин"
+      const soonTag = row.querySelector('.soon-tag');
+      if(isNext){
+        if(!soonTag){
+          const tag = document.createElement('div');
+          tag.className = 'soon-tag';
+          tag.textContent = `через ${nextDiff} мин`;
+          row.appendChild(tag);
+        } else {
+          soonTag.textContent = `через ${nextDiff} мин`;
+        }
+      } else if(soonTag) {
+        soonTag.remove();
+      }
+    });
+    return;
+  }
+
+  // Полное перестроение DOM при первой отрисовке или смене меню
   const prevScrollTop = dom.menuList.scrollTop;
   dom.menuList.innerHTML = set.data.map(([num,cat,dep,arr,dest,alabushevo], i)=>{
     const [h,m] = dep.split(":").map(Number);
@@ -2431,7 +2481,8 @@ function buildThemeSwitcher(){
     btn.onclick = ()=> applyTheme(t.id, true);
     frag.appendChild(btn);
   });
-  dom.themeSwitcher.innerHTML = '';
+  // Удаляем только кнопки тем, сохраняя кнопку настроек
+  dom.themeSwitcher.querySelectorAll('.theme-swatch').forEach(el => el.remove());
   dom.themeSwitcher.appendChild(frag);
   applyTheme(currentThemeId(), false);
 }
@@ -2543,6 +2594,10 @@ function buildThemeMenuGrid(){
     grid.appendChild(card);
   });
 
+  // Удаляем старый блок восстановления если есть
+  const oldRestoreInfo = grid.parentElement.querySelector('.theme-restore-info');
+  if(oldRestoreInfo) oldRestoreInfo.remove();
+
   // Show restore button if any themes are hidden
   if(hidden.length > 0){
     const restoreInfo = document.createElement('div');
@@ -2648,6 +2703,7 @@ function initBoard(){
 
   let waitingWorker = null;
   let reloadQueue = null;
+  let hadController = !!navigator.serviceWorker.controller; // отслеживаем наличие контроллера при старте
 
   function showUpdateBanner(worker){
     waitingWorker = worker;
@@ -2664,6 +2720,7 @@ function initBoard(){
 
   function doReload(){
     if(reloadQueue) return;
+    if(!hadController) return; // не перезагружаем при первой установке SW
     reloadQueue = true;
     window.location.reload();
   }
