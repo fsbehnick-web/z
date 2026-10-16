@@ -1,15 +1,18 @@
 // Service worker — офлайн-оболочка Табло Андрея и Ани.
-const CACHE_VERSION = 'v4';
+// v5: новая вёрстка табло (выравнивание пар по номеру слота, блок встречи, ключи *-andrey-anya).
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `tablo-andrey-anya-shell-${CACHE_VERSION}`;
 
+// Без них оболочка не работает — если не загрузились, установка прерывается.
 const SHELL_ASSETS = [
   './',
   './index.html',
   './data.json',
-  './manifest.json',
 ];
 
-const ICON_ASSETS = [
+// Необязательные файлы: их отсутствие (404) не должно ломать установку воркера.
+const OPTIONAL_ASSETS = [
+  './manifest.json',
   './icon-192.png',
   './icon-512.png',
   './icon-512-maskable.png',
@@ -20,7 +23,7 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then(async (cache) => {
       await cache.addAll(SHELL_ASSETS.map((url) => new Request(url, { cache: 'reload' })));
       await Promise.allSettled(
-        ICON_ASSETS.map((url) => cache.add(new Request(url, { cache: 'reload' })))
+        OPTIONAL_ASSETS.map((url) => cache.add(new Request(url, { cache: 'reload' })))
       );
     })
   );
