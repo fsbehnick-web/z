@@ -1,6 +1,6 @@
 // Service worker — офлайн-оболочка Табло Андрея и Ани.
 // v5: новая вёрстка табло (выравнивание пар по номеру слота, блок встречи, ключи *-andrey-anya).
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `tablo-andrey-anya-shell-${CACHE_VERSION}`;
 
 // Без них оболочка не работает — если не загрузились, установка прерывается.
